@@ -15,10 +15,16 @@ import {
     child,
     onValue,
     update,
-    push, // Though not used in current enroll, good to have if we change to push keys
-    orderByChild, // For querying announcements
-    query // For querying announcements
+    push,
+    orderByChild,
+    query
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+import {
+    getStorage,
+    ref as storageRef,
+    uploadBytes,
+    getDownloadURL
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
 
 // Wait for the DOM to be fully loaded before running scripts
@@ -59,41 +65,139 @@ document.addEventListener('DOMContentLoaded', () => {
         profile: document.getElementById('profile-page')
     };
 
-    // --- AUTHENTICATION ---
+    const storage = getStorage(auth.app); // Get storage instance from the same app
+
+    // --- AUTHENTICATION & USER CREATION ---
+
+    // Helper function to upload a file and get its download URL
+    async function uploadFileToStorage(file, path) {
+        if (!file) return null;
+        const fileRef = storageRef(storage, path);
+        try {
+            const snapshot = await uploadBytes(fileRef, file);
+            const downloadURL = await getDownloadURL(snapshot.ref);
+            console.log('File uploaded to:', downloadURL);
+            return downloadURL;
+        } catch (error) {
+            console.error(`Error uploading file to ${path}:`, error);
+            throw error; // Re-throw to be caught by the signup handler
+        }
+    }
 
     // Signup
     if (signupForm) {
-        signupForm.addEventListener('submit', (e) => {
+        signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
+            if(authError) authError.textContent = ''; // Clear previous errors
+
+            // Basic Info
             const name = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
 
-            createUserWithEmailAndPassword(auth, email, password)
-                .then(userCredential => {
-                    const user = userCredential.user;
-                    // Store additional user info in Realtime Database
-                    const userRef = ref(db, 'users/' + user.uid);
-                    set(userRef, {
-                        displayName: name,
-                        email: email,
-                        role: 'student',
-                        enrolledCourses: [], // Initialize as empty array or null for Firebase
-                        progress: {} // Initialize as empty object or null
-                    }).then(() => {
-                        console.log('User signed up and data stored:', user.uid);
-                        signupForm.reset();
-                        if(authError) authError.textContent = '';
-                        // User will be managed by onAuthStateChanged
-                    }).catch(dbError => {
-                        console.error('Error storing user data:', dbError);
-                         if(authError) authError.textContent = `Error storing user data: ${dbError.message}`;
-                    });
-                })
-                .catch(authErrorFull => {
-                    console.error('Signup error:', authErrorFull);
-                    if(authError) authError.textContent = `Signup Error: ${authErrorFull.message}`;
-                });
+            // Personal Details
+            const dob = document.getElementById('signup-dob').value;
+            const gender = document.getElementById('signup-gender').value;
+
+            // Contact Info
+            const phone = document.getElementById('signup-phone').value;
+            const addressStreet = document.getElementById('signup-address-street').value;
+            const addressCity = document.getElementById('signup-address-city').value;
+            const addressState = document.getElementById('signup-address-state').value;
+            const addressZip = document.getElementById('signup-address-zip').value;
+            const addressCountry = document.getElementById('signup-address-country').value;
+
+            // Academic Background
+            const prevEducation = document.getElementById('signup-prev-education').value;
+            const transcriptsFile = document.getElementById('signup-transcripts').files[0];
+
+            // Program Selection
+            const degree = document.getElementById('signup-degree').value;
+            const major = document.getElementById('signup-major').value;
+            const minor = document.getElementById('signup-minor').value;
+
+            // Emergency Contact
+            const emergencyName = document.getElementById('signup-emergency-name').value;
+            const emergencyRelationship = document.getElementById('signup-emergency-relationship').value;
+            const emergencyPhone = document.getElementById('signup-emergency-phone').value;
+
+            // Profile Picture
+            const profilePictureFile = document.getElementById('signup-profile-picture').files[0];
+
+            // Terms
+            const termsAccepted = document.getElementById('signup-terms').checked;
+
+            if (!termsAccepted) {
+                if(authError) authError.textContent = "You must accept the Terms and Conditions.";
+                return;
+            }
+
+            try {
+                const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                const user = userCredential.user;
+
+                // Upload files if they exist
+                let profilePictureURL = null;
+                if (profilePictureFile) {
+                    profilePictureURL = await uploadFileToStorage(profilePictureFile, `profilePictures/${user.uid}/${profilePictureFile.name}`);
+                }
+
+                let transcriptsURL = null;
+                if (transcriptsFile) {
+                    transcriptsURL = await uploadFileToStorage(transcriptsFile, `transcripts/${user.uid}/${transcriptsFile.name}`);
+                }
+
+                // Construct user data object
+                const userData = {
+                    displayName: name,
+                    email: email,
+                    role: 'student',
+                    profilePictureURL: profilePictureURL,
+                    personalDetails: {
+                        dateOfBirth: dob,
+                        gender: gender
+                    },
+                    contactInfo: {
+                        phone: phone,
+                        address: {
+                            street: addressStreet,
+                            city: addressCity,
+                            state: addressState,
+                            zip: addressZip,
+                            country: addressCountry
+                        }
+                    },
+                    academicBackground: {
+                        previousEducation: prevEducation,
+                        transcriptsURL: transcriptsURL
+                    },
+                    programSelection: {
+                        degree: degree,
+                        major: major,
+                        minor: minor
+                    },
+                    emergencyContact: {
+                        name: emergencyName,
+                        relationship: emergencyRelationship,
+                        phone: emergencyPhone
+                    },
+                    termsAccepted: termsAccepted,
+                    createdAt: Date.now(),
+                    enrolledCourses: [],
+                    progress: {}
+                };
+
+                const userDbRef = ref(db, 'users/' + user.uid);
+                await set(userDbRef, userData);
+
+                console.log('User signed up and all data stored:', user.uid);
+                signupForm.reset();
+                // onAuthStateChanged will handle UI updates
+
+            } catch (error) {
+                console.error('Signup process error:', error);
+                if(authError) authError.textContent = `Signup Error: ${error.message}`;
+            }
         });
     }
 
@@ -220,10 +324,62 @@ document.addEventListener('DOMContentLoaded', () => {
         onValue(userDbRef, (snapshot) => {
             const userData = snapshot.val();
             if (userData) {
-                // Populate profile page
-                if (document.getElementById('user-name')) document.getElementById('user-name').textContent = userData.displayName;
-                if (document.getElementById('user-email')) document.getElementById('user-email').textContent = userData.email;
-                if (document.getElementById('user-role')) document.getElementById('user-role').textContent = userData.role;
+                // General elements present on multiple pages or profile page
+                const userNameEl = document.getElementById('user-name');
+                const userEmailEl = document.getElementById('user-email');
+                const userRoleEl = document.getElementById('user-role');
+
+                if (userNameEl) userNameEl.textContent = userData.displayName || 'N/A';
+                if (userEmailEl) userEmailEl.textContent = userData.email || 'N/A';
+                if (userRoleEl) userRoleEl.textContent = userData.role || 'N/A';
+
+                // Profile page specific elements
+                if (window.location.pathname.endsWith('profile.html')) {
+                    const profilePicEl = document.getElementById('profile-picture');
+                    if (profilePicEl && userData.profilePictureURL) {
+                        profilePicEl.src = userData.profilePictureURL;
+                    } else if (profilePicEl) {
+                        profilePicEl.src = 'https://via.placeholder.com/150'; // Default if no URL
+                    }
+
+                    // Personal Details
+                    document.getElementById('user-dob').textContent = userData.personalDetails?.dateOfBirth || 'N/A';
+                    document.getElementById('user-gender').textContent = userData.personalDetails?.gender || 'N/A';
+
+                    // Contact Info
+                    document.getElementById('user-phone').textContent = userData.contactInfo?.phone || 'N/A';
+                    document.getElementById('user-address-street').textContent = userData.contactInfo?.address?.street || 'N/A';
+                    document.getElementById('user-address-city').textContent = userData.contactInfo?.address?.city || 'N/A';
+                    document.getElementById('user-address-state').textContent = userData.contactInfo?.address?.state || 'N/A';
+                    document.getElementById('user-address-zip').textContent = userData.contactInfo?.address?.zip || 'N/A';
+                    document.getElementById('user-address-country').textContent = userData.contactInfo?.address?.country || 'N/A';
+
+                    // Academic Background
+                    document.getElementById('user-prev-education').textContent = userData.academicBackground?.previousEducation || 'N/A';
+                    const transcriptsLink = document.getElementById('user-transcripts-link');
+                    const transcriptsNA = document.getElementById('user-transcripts-na');
+                    if (userData.academicBackground?.transcriptsURL) {
+                        transcriptsLink.href = userData.academicBackground.transcriptsURL;
+                        transcriptsLink.classList.remove('hidden');
+                        transcriptsNA.classList.add('hidden');
+                    } else {
+                        transcriptsLink.classList.add('hidden');
+                        transcriptsNA.classList.remove('hidden');
+                        transcriptsNA.textContent = 'N/A';
+                    }
+
+                    // Program Selection
+                    document.getElementById('user-degree').textContent = userData.programSelection?.degree || 'N/A';
+                    document.getElementById('user-major').textContent = userData.programSelection?.major || 'N/A';
+                    document.getElementById('user-minor').textContent = userData.programSelection?.minor || 'N/A';
+
+                    // Emergency Contact
+                    document.getElementById('user-emergency-name').textContent = userData.emergencyContact?.name || 'N/A';
+                    document.getElementById('user-emergency-relationship').textContent = userData.emergencyContact?.relationship || 'N/A';
+                    document.getElementById('user-emergency-phone').textContent = userData.emergencyContact?.phone || 'N/A';
+
+                    document.getElementById('user-terms-accepted').textContent = userData.termsAccepted ? 'Yes' : 'No';
+                }
 
                 // If on dashboard, load data
                 if (window.location.pathname.endsWith('dashboard.html')) {

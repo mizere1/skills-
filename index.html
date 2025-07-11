@@ -35,6 +35,49 @@
                 <input type="text" id="signup-name" placeholder="Full Name" required>
                 <input type="email" id="signup-email" placeholder="Email" required>
                 <input type="password" id="signup-password" placeholder="Password" required>
+
+                <h4>Personal Details</h4>
+                <input type="date" id="signup-dob" placeholder="Date of Birth">
+                <select id="signup-gender">
+                    <option value="">Select Gender...</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                    <option value="PreferNotToSay">Prefer Not to Say</option>
+                </select>
+
+                <h4>Contact Information</h4>
+                <input type="tel" id="signup-phone" placeholder="Phone Number">
+                <input type="text" id="signup-address-street" placeholder="Street Address">
+                <input type="text" id="signup-address-city" placeholder="City">
+                <input type="text" id="signup-address-state" placeholder="State/Province">
+                <input type="text" id="signup-address-zip" placeholder="Zip/Postal Code">
+                <input type="text" id="signup-address-country" placeholder="Country">
+
+                <h4>Academic Background</h4>
+                <textarea id="signup-prev-education" placeholder="Previous Education (e.g., High School, Previous Degrees)"></textarea>
+                <label for="signup-transcripts">Upload Transcripts (PDF, DOC, DOCX):</label>
+                <input type="file" id="signup-transcripts" accept=".pdf,.doc,.docx">
+
+                <h4>Program Selection</h4>
+                <input type="text" id="signup-degree" placeholder="Degree (e.g., Bachelor of Science)">
+                <input type="text" id="signup-major" placeholder="Major (e.g., Computer Science)">
+                <input type="text" id="signup-minor" placeholder="Minor (Optional)">
+
+                <h4>Emergency Contact</h4>
+                <input type="text" id="signup-emergency-name" placeholder="Emergency Contact Name">
+                <input type="text" id="signup-emergency-relationship" placeholder="Relationship">
+                <input type="tel" id="signup-emergency-phone" placeholder="Emergency Contact Phone">
+
+                <h4>Profile Picture</h4>
+                <label for="signup-profile-picture">Upload Profile Picture (JPG, PNG):</label>
+                <input type="file" id="signup-profile-picture" accept="image/jpeg,image/png">
+
+                <div>
+                    <input type="checkbox" id="signup-terms" required>
+                    <label for="signup-terms">I accept the <a href="#terms" target="_blank">Terms and Conditions</a></label>
+                </div>
+
                 <button type="submit">Sign Up</button>
             </form>
              <p id="auth-error" class="error-message"></p>
@@ -43,7 +86,7 @@
 
     <main id="home-page" class="container page-content">
         <section id="welcome-message">
-            <h1>Welcome to the University Learning Portal</h1>
+            <h1 style="font-size: 1.8em; margin-bottom: 0.5em;">Welcome to the University Learning Portal</h1> <!-- Adjusted style due to long signup -->
             <p>Explore our courses and start your learning journey today.</p>
         </section>
         <section id="all-courses">

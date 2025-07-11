@@ -24,9 +24,47 @@
         <section id="user-profile">
             <h1>User Profile</h1>
             <div id="profile-info">
-                <p><strong>Name:</strong> <span id="user-name"></span></p>
-                <p><strong>Email:</strong> <span id="user-email"></span></p>
-                <p><strong>Role:</strong> <span id="user-role"></span></p>
+                <div id="profile-picture-container" style="margin-bottom: 20px;">
+                    <img id="profile-picture" src="https://via.placeholder.com/150" alt="Profile Picture" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; border: 3px solid var(--mit-light-gray);">
+                </div>
+
+                <h2>Basic Information</h2>
+                <p><strong>Name:</strong> <span id="user-name">N/A</span></p>
+                <p><strong>Email:</strong> <span id="user-email">N/A</span></p>
+                <p><strong>Role:</strong> <span id="user-role">N/A</span></p>
+
+                <h2>Personal Details</h2>
+                <p><strong>Date of Birth:</strong> <span id="user-dob">N/A</span></p>
+                <p><strong>Gender:</strong> <span id="user-gender">N/A</span></p>
+
+                <h2>Contact Information</h2>
+                <p><strong>Phone:</strong> <span id="user-phone">N/A</span></p>
+                <div id="user-address-details">
+                    <p><strong>Address:</strong></p>
+                    <ul style="list-style-type: none; padding-left: 20px;">
+                        <li>Street: <span id="user-address-street">N/A</span></li>
+                        <li>City: <span id="user-address-city">N/A</span></li>
+                        <li>State: <span id="user-address-state">N/A</span></li>
+                        <li>Zip Code: <span id="user-address-zip">N/A</span></li>
+                        <li>Country: <span id="user-address-country">N/A</span></li>
+                    </ul>
+                </div>
+
+                <h2>Academic Background</h2>
+                <p><strong>Previous Education:</strong> <span id="user-prev-education">N/A</span></p>
+                <p><strong>Transcripts:</strong> <a id="user-transcripts-link" href="#" target="_blank" class="hidden">View Transcripts</a> <span id="user-transcripts-na" class="hidden">N/A</span></p>
+
+                <h2>Program Selection</h2>
+                <p><strong>Degree:</strong> <span id="user-degree">N/A</span></p>
+                <p><strong>Major:</strong> <span id="user-major">N/A</span></p>
+                <p><strong>Minor:</strong> <span id="user-minor">N/A</span></p>
+
+                <h2>Emergency Contact</h2>
+                <p><strong>Name:</strong> <span id="user-emergency-name">N/A</span></p>
+                <p><strong>Relationship:</strong> <span id="user-emergency-relationship">N/A</span></p>
+                <p><strong>Phone:</strong> <span id="user-emergency-phone">N/A</span></p>
+
+                <p><strong>Terms Accepted:</strong> <span id="user-terms-accepted">N/A</span></p>
             </div>
             <button id="logout-button" class="btn">Logout</button>
         </section>
