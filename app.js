@@ -32,19 +32,17 @@ import {
 import { addSampleCourses, addSampleAnnouncements, addSampleAcademicTerms } from './sample-data.js';
 
 // --- Global DOM Element variables ---
-// These will be assigned once the DOM is loaded in DOMContentLoaded
 let loginForm, signupForm, logoutButton, loginLogoutNav, authSection, authError, welcomeMessage;
 let mainContentPages = {};
-let storage; // Firebase Storage instance
+let storage;
 
-// --- CORE HELPER & AUTH FUNCTIONS (Defined Very Early) ---
+// --- CORE HELPER & AUTH FUNCTIONS ---
 function handleLogout() {
+    console.log("handleLogout: CALLED");
     signOut(auth).then(() => {
-        console.log('User logged out');
-        window.location.href = 'index.html';
+        console.log('User logged out successfully via handleLogout');
     }).catch(error => {
-        console.error('Logout error:', error);
-        // Display error to user if needed, though redirect might obscure it
+        console.error('Logout error in handleLogout:', error);
         alert(`Logout failed: ${error.message}`);
     });
 }
@@ -67,8 +65,8 @@ async function uploadFileToStorage(file, path) {
 }
 
 function showAuthSection(e){
+    console.log("showAuthSection: CALLED");
     if(e) e.preventDefault();
-    // Ensure elements are defined (they are assigned in DOMContentLoaded)
     if (authSection) authSection.classList.remove('hidden');
     if (welcomeMessage) welcomeMessage.classList.add('hidden');
     if (mainContentPages.home && (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/'))) {
@@ -78,6 +76,7 @@ function showAuthSection(e){
 }
 
 function clearProfilePageData() {
+    console.log("clearProfilePageData: CALLED");
     const profileFieldsIds = [
         'user-name', 'user-email', 'user-role', 'user-dob', 'user-gender',
         'user-phone', 'user-address-street', 'user-address-city', 'user-address-state',
@@ -105,42 +104,52 @@ function clearProfilePageData() {
 }
 
 // --- UI Update Functions (General) ---
-function updateUIForLoggedInUser(user) { // user is auth object
+function updateUIForLoggedInUser(user) {
+    console.log("updateUIForLoggedInUser: CALLED for user", user?.uid);
     if (loginLogoutNav) {
         loginLogoutNav.textContent = 'Logout';
-        // Ensure showAuthSection is defined or this listener is only added after it is
-        if (typeof showAuthSection === 'function') {
-            loginLogoutNav.removeEventListener('click', showAuthSection);
-        }
+        loginLogoutNav.removeEventListener('click', showAuthSection);
         loginLogoutNav.addEventListener('click', (e) => {
+            console.log("Logout link in NAV clicked");
             e.preventDefault();
-            handleLogout(); // This calls the handleLogout defined above
+            handleLogout();
         });
     }
     if (authSection) authSection.classList.add('hidden');
 
-    const currentPage = window.location.pathname.split("/").pop();
-    const pageKey = currentPage.split('.')[0];
-
-    if (mainContentPages[pageKey] && mainContentPages[pageKey] !== null) {
-        mainContentPages[pageKey].classList.remove('hidden');
-    } else if (currentPage === '' || currentPage === 'index.html') {
-         if(mainContentPages.home) mainContentPages.home.classList.remove('hidden');
+    if (welcomeMessage && (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/'))) {
+        welcomeMessage.classList.remove('hidden');
+        const h1 = welcomeMessage.querySelector('h1');
+        if(h1 && user.displayName) h1.textContent = `Welcome, ${user.displayName}!`;
+        else if(h1) h1.textContent = `Welcome!`;
     }
 
-    if (welcomeMessage && (currentPage === 'index.html' || currentPage === '')) {
-        welcomeMessage.classList.remove('hidden');
+    Object.values(mainContentPages).forEach(pageEl => {
+        if (pageEl) pageEl.classList.add('hidden');
+    });
+    const currentPage = window.location.pathname.split("/").pop();
+    const pageKey = currentPage.split('.')[0];
+    if (mainContentPages[pageKey] && mainContentPages[pageKey] !== null) {
+         mainContentPages[pageKey].classList.remove('hidden');
+    } else if (currentPage === '' || currentPage === 'index.html') {
+         if(mainContentPages.home) mainContentPages.home.classList.remove('hidden');
     }
 }
 
 function updateUIForLoggedOutUser() {
+    console.log("updateUIForLoggedOutUser: CALLED");
     if (loginLogoutNav) {
         loginLogoutNav.textContent = 'Login';
-        loginLogoutNav.removeEventListener('click', handleLogout); // Remove specific listener if it was added
+        loginLogoutNav.removeEventListener('click', handleLogout);
         if (typeof showAuthSection === 'function') {
             loginLogoutNav.addEventListener('click', showAuthSection);
+        } else {
+            console.error("showAuthSection is not defined when trying to attach to loginLogoutNav in updateUIForLoggedOutUser");
         }
     }
+    Object.values(mainContentPages).forEach(pageEl => {
+        if (pageEl) pageEl.classList.add('hidden');
+    });
     const adminNavLink = document.getElementById('admin-nav-link');
     if(adminNavLink) adminNavLink.classList.add('hidden');
     const studentChatNavLink = document.getElementById('student-chat-nav-link');
@@ -148,15 +157,17 @@ function updateUIForLoggedOutUser() {
 
     const currentPage = window.location.pathname.split("/").pop();
     const protectedPages = ['dashboard.html', 'profile.html', 'course.html', 'admin.html', 'chat.html'];
+
     if (protectedPages.includes(currentPage)) {
+        console.log(`updateUIForLoggedOutUser: On protected page ${currentPage}, redirecting to index.html`);
         window.location.href = 'index.html';
     } else if (currentPage === 'index.html' || currentPage === '') {
         if (authSection) authSection.classList.remove('hidden');
         if (welcomeMessage) welcomeMessage.classList.add('hidden');
+        if (mainContentPages.home) mainContentPages.home.classList.remove('hidden');
         const coursesContainer = document.getElementById('courses-container');
         if (coursesContainer) coursesContainer.innerHTML = '<p>Please log in or sign up to see courses.</p>';
     }
-
     if (window.location.pathname.endsWith('profile.html')) clearProfilePageData();
     if (document.getElementById('enrolled-courses-list')) document.getElementById('enrolled-courses-list').innerHTML = '';
     if (document.getElementById('announcements-list')) document.getElementById('announcements-list').innerHTML = '<li>No new announcements.</li>';
@@ -167,9 +178,10 @@ function updateUIForLoggedOutUser() {
     }
 }
 
+
 // --- Page Specific Initializers ---
 function initializeAdminPageLogic(adminUser, adminUserData) {
-    console.log("Attempting to initialize Admin Page Logic for user:", adminUser.uid);
+    console.log("Initializing Admin Page Logic for user:", adminUser.uid);
     const createCourseForm = document.getElementById('create-course-form');
     const createCourseMessageEl = document.getElementById('create-course-message');
     const courseCreationTermSelectEl = document.getElementById('course-creation-term-select');
@@ -209,13 +221,18 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
     const existingTermsListEl = document.getElementById('existing-terms-list');
 
     async function displayExistingTerms() {
-        if (!existingTermsListEl || !courseCreationTermSelectEl) return;
+        if (!existingTermsListEl || !courseCreationTermSelectEl) {
+            console.warn("displayExistingTerms: Term list or select element not found.");
+            return;
+        }
         existingTermsListEl.innerHTML = '<li>Loading terms...</li>';
         courseCreationTermSelectEl.innerHTML = '<option value="">Loading Terms...</option>';
+
         try {
             const termsSnapshot = await get(query(ref(db, 'academicTerms'), orderByChild('startDate')));
             existingTermsListEl.innerHTML = '';
             courseCreationTermSelectEl.innerHTML = '<option value="">-- Select Term --</option>';
+
             if (termsSnapshot.exists()) {
                 termsSnapshot.forEach(termSnap => {
                     const termId = termSnap.key;
@@ -223,6 +240,7 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
                     const li = document.createElement('li');
                     li.textContent = `${term.name} (${term.type}): ${term.startDate} to ${term.endDate}`;
                     existingTermsListEl.appendChild(li);
+
                     const option = document.createElement('option');
                     option.value = termId;
                     option.textContent = term.name;
@@ -248,6 +266,7 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
             const termType = document.getElementById('term-type').value;
             const termStartDate = document.getElementById('term-start-date').value;
             const termEndDate = document.getElementById('term-end-date').value;
+
             if (!termName || isNaN(termYear) || !termType || !termStartDate || !termEndDate) {
                 if(termCreateStatusEl) {termCreateStatusEl.textContent = "All fields are required."; termCreateStatusEl.style.color = 'var(--mit-red)';}
                 return;
@@ -405,15 +424,18 @@ function initializeChatPage(currentUser) {
 
 // --- Main User Data Loading and Page Routing Logic ---
 function loadUserData(user) {
-    console.log("--- loadUserData: CALLED for UID: " + user.uid + " ---");
-    console.log("loadUserData: User object passed:", user);
+    console.log("--- loadUserData: CALLED for UID: " + user.uid + " (Full Functionality Enabled) ---");
+    console.log("loadUserData: User auth object passed:", JSON.stringify(user, null, 2));
+
     const userDbRef = ref(db, 'users/' + user.uid);
     console.log("loadUserData: ABOUT TO CALL get() for path: " + userDbRef.toString());
+
     get(userDbRef).then((snapshot) => {
         console.log('loadUserData - Raw snapshot value for UID ' + user.uid + ':', snapshot.val());
         const userData = snapshot.val();
         const adminNavLink = document.getElementById('admin-nav-link');
         const studentChatNavLink = document.getElementById('student-chat-nav-link');
+
         if(studentChatNavLink) studentChatNavLink.classList.remove('hidden');
 
         if (userData) {
@@ -422,6 +444,11 @@ function loadUserData(user) {
             const userEmailEl = document.getElementById('user-email');
             if (userNameEl) userNameEl.textContent = userData.displayName || 'N/A';
             if (userEmailEl) userEmailEl.textContent = userData.email || 'N/A';
+
+            if (welcomeMessage && (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/'))) {
+                const h1 = welcomeMessage.querySelector('h1');
+                if(h1) h1.textContent = `Welcome, ${userData.displayName || user.displayName || 'User'}!`;
+            }
 
             if (adminNavLink) {
                 if (userData.role === 'admin' || userData.role === 'faculty') {
@@ -509,6 +536,7 @@ function loadUserData(user) {
             console.error('loadUserData - userData is null or undefined for UID:', user.uid);
             if (window.location.pathname.endsWith('profile.html')) clearProfilePageData();
             if (adminNavLink) adminNavLink.classList.add('hidden');
+
             const currentPage = window.location.pathname.split("/").pop();
             const protectedPagesForNoData = ['dashboard.html', 'profile.html', 'course.html', 'admin.html'];
             if(protectedPagesForNoData.includes(currentPage)){
@@ -645,7 +673,7 @@ async function loadEnrolledCourses(userId, enrolledCoursesData, userProgress) {
             if (course) {
                 const courseProg = userProgress[courseId] || { completedModules: [], totalModules: course.modules?.length || 0 };
                 const completedCount = courseProg.completedModules?.length || 0;
-                const totalModules = courseProg.totalModules;
+                const totalModules = courseProg.totalModules || (course.modules?.length || 0);
                 const progressPercent = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
                 let statusHtml = '', btnHtml = `<a href="course.html?id=${courseId}" class="btn">View Course</a>`;
                 if (enrollment.currentStatus === 'pending_approval') {
@@ -724,7 +752,9 @@ async function markModuleComplete(userId, courseId, moduleId, button) {
         if (!completed.includes(moduleId)) {
             completed.push(moduleId); await set(progRef, completed);
             if (button) { button.textContent = 'Completed'; button.disabled = true;
-                          button.parentElement.querySelector('.module-status').textContent = 'Completed'; }
+                          const statusEl = button.parentElement.querySelector('.module-status');
+                          if(statusEl) statusEl.textContent = 'Completed';
+                        }
             if (window.location.pathname.endsWith('dashboard.html') && auth.currentUser) loadUserData(auth.currentUser);
         }
     } catch (e) { console.error("Error marking module complete:", e); alert(`Error: ${e.message}`); }
@@ -791,9 +821,21 @@ async function ensureSampleDataIsPopulated() {
     } catch (e) { console.error("Error during sample data check/population:", e); }
 }
 
+// --- Main Auth State Listener (Defined once, globally) ---
+onAuthStateChanged(auth, user => {
+    if (user) {
+        console.log('onAuthStateChanged - User:', user.uid);
+        updateUIForLoggedInUser(user);
+        loadUserData(user);
+    } else {
+        console.log('User is signed out.');
+        updateUIForLoggedOutUser();
+    }
+});
+
 // --- DOMContentLoaded Initial Setup ---
 document.addEventListener('DOMContentLoaded', async () => {
-    // Assign global DOM Element variables
+    console.log("DOMContentLoaded: START");
     loginForm = document.getElementById('login-form');
     signupForm = document.getElementById('signup-form');
     logoutButton = document.getElementById('logout-button');
@@ -823,7 +865,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
     storage = getStorage(auth.app);
 
-    // Setup static event listeners for signup and login forms
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -893,7 +934,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 .catch(error => { console.error('Login error:', error); if(authError) authError.textContent = `Login Error: ${error.message}`; });
         });
     }
-    if (logoutButton) logoutButton.addEventListener('click', handleLogout); // This is for the profile page button
+    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
 
     if ((window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) && !auth.currentUser) {
         if (authSection) authSection.classList.remove('hidden');
@@ -903,5 +944,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     await ensureSampleDataIsPopulated();
-    // The main onAuthStateChanged listener (defined above) will handle further UI updates and data loading.
-}); // End DOMContentLoaded
+});
