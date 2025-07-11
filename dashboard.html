@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - University Portal</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <nav>
+        <div class="container">
+            <a href="index.html" class="logo">University Portal</a>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="dashboard.html">My Courses</a></li>
+                <li><a href="profile.html">Profile</a></li>
+                <li id="auth-status"><a href="#" id="login-logout">Login</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main id="dashboard-page" class="container page-content">
+        <section id="student-dashboard">
+            <h1>Student Dashboard</h1>
+
+            <div id="enrolled-courses-section">
+                <h2>My Enrolled Courses</h2>
+                <div id="enrolled-courses-list" class="course-list">
+                    <!-- Enrolled courses will be dynamically loaded here -->
+                </div>
+            </div>
+
+            <div id="upcoming-assignments-section">
+                <h2>Upcoming Assignments/Quizzes</h2>
+                <ul id="upcoming-assignments-list">
+                    <!-- Upcoming assignments will be dynamically loaded here -->
+                    <li>No upcoming assignments at the moment.</li>
+                </ul>
+            </div>
+
+            <div id="announcements-section">
+                <h2>Announcements</h2>
+                <ul id="announcements-list">
+                    <!-- Announcements will be dynamically loaded here -->
+                    <li>No new announcements.</li>
+                </ul>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2024 University Portal. Inspired by MIT OpenCourseWare.</p>
+        </div>
+    </footer>
+
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="firebase-config.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
