@@ -31,10 +31,9 @@ import { addSampleCourses, addSampleAnnouncements } from './sample-data.js';
 
 
 // Wait for the DOM to be fully loaded before running scripts
-document.addEventListener('DOMContentLoaded', async () => { // Made async for await ensureSampleData
+document.addEventListener('DOMContentLoaded', async () => {
     if (!auth || !db) {
         console.error("Firebase auth or db service not available. Check firebase-config.js.");
-        // Display a message to the user on the page if Firebase is not configured.
         const mainContent = document.querySelector('main');
         if (mainContent) {
             const errorDiv = document.createElement('div');
@@ -44,20 +43,18 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
             errorDiv.style.padding = '20px';
             mainContent.prepend(errorDiv);
         }
-        // Disable forms or buttons that rely on Firebase
         const forms = document.querySelectorAll('form');
         forms.forEach(form => {
             const buttons = form.querySelectorAll('button');
             buttons.forEach(button => button.disabled = true);
         });
-        return; // Stop script execution if Firebase is not ready
+        return;
     }
 
-    // DOM Elements
     const loginForm = document.getElementById('login-form');
     const signupForm = document.getElementById('signup-form');
-    const logoutButton = document.getElementById('logout-button'); // On profile page
-    const loginLogoutNav = document.getElementById('login-logout'); // In navbar
+    const logoutButton = document.getElementById('logout-button');
+    const loginLogoutNav = document.getElementById('login-logout');
     const authSection = document.getElementById('auth-section');
     const authError = document.getElementById('auth-error');
     const welcomeMessage = document.getElementById('welcome-message');
@@ -65,14 +62,14 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
         home: document.getElementById('home-page'),
         dashboard: document.getElementById('dashboard-page'),
         courseDetail: document.getElementById('course-detail-page'),
-        profile: document.getElementById('profile-page')
+        profile: document.getElementById('profile-page'),
+        admin: document.getElementById('admin-page') // Added for admin page logic
     };
 
-    const storage = getStorage(auth.app); // Get storage instance from the same app
+    const storage = getStorage(auth.app);
 
     // --- AUTHENTICATION & USER CREATION ---
 
-    // Helper function to upload a file and get its download URL
     async function uploadFileToStorage(file, path) {
         if (!file) return null;
         const fileRef = storageRef(storage, path);
@@ -83,51 +80,35 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
             return downloadURL;
         } catch (error) {
             console.error(`Error uploading file to ${path}:`, error);
-            throw error; // Re-throw to be caught by the signup handler
+            throw error;
         }
     }
 
-    // Signup
     if (signupForm) {
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
-            if(authError) authError.textContent = ''; // Clear previous errors
+            if(authError) authError.textContent = '';
 
-            // Basic Info
             const name = document.getElementById('signup-name').value;
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
-
-            // Personal Details
             const dob = document.getElementById('signup-dob').value;
             const gender = document.getElementById('signup-gender').value;
-
-            // Contact Info
             const phone = document.getElementById('signup-phone').value;
             const addressStreet = document.getElementById('signup-address-street').value;
             const addressCity = document.getElementById('signup-address-city').value;
             const addressState = document.getElementById('signup-address-state').value;
             const addressZip = document.getElementById('signup-address-zip').value;
             const addressCountry = document.getElementById('signup-address-country').value;
-
-            // Academic Background
             const prevEducation = document.getElementById('signup-prev-education').value;
             const transcriptsFile = document.getElementById('signup-transcripts').files[0];
-
-            // Program Selection
             const degree = document.getElementById('signup-degree').value;
             const major = document.getElementById('signup-major').value;
             const minor = document.getElementById('signup-minor').value;
-
-            // Emergency Contact
             const emergencyName = document.getElementById('signup-emergency-name').value;
             const emergencyRelationship = document.getElementById('signup-emergency-relationship').value;
             const emergencyPhone = document.getElementById('signup-emergency-phone').value;
-
-            // Profile Picture
             const profilePictureFile = document.getElementById('signup-profile-picture').files[0];
-
-            // Terms
             const termsAccepted = document.getElementById('signup-terms').checked;
 
             if (!termsAccepted) {
@@ -139,7 +120,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                 const userCredential = await createUserWithEmailAndPassword(auth, email, password);
                 const user = userCredential.user;
 
-                // Upload files if they exist
                 let profilePictureURL = null;
                 if (profilePictureFile) {
                     profilePictureURL = await uploadFileToStorage(profilePictureFile, `profilePictures/${user.uid}/${profilePictureFile.name}`);
@@ -150,64 +130,38 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                     transcriptsURL = await uploadFileToStorage(transcriptsFile, `transcripts/${user.uid}/${transcriptsFile.name}`);
                 }
 
-                // Construct user data object
                 const userData = {
-                    displayName: name,
-                    email: email,
-                    role: 'student', // Default role
-                    profilePictureURL: profilePictureURL,
-                    personalDetails: {
-                        dateOfBirth: dob,
-                        gender: gender
-                    },
-                    contactInfo: {
-                        phone: phone,
-                        address: {
-                            street: addressStreet,
-                            city: addressCity,
-                            state: addressState,
-                            zip: addressZip,
-                            country: addressCountry
-                        }
-                    },
-                    academicBackground: {
-                        previousEducation: prevEducation,
-                        transcriptsURL: transcriptsURL
-                    },
-                    programSelection: {
-                        degree: degree,
-                        major: major,
-                        minor: minor
-                    },
-                    emergencyContact: {
-                        name: emergencyName,
-                        relationship: emergencyRelationship,
-                        phone: emergencyPhone
-                    },
-                    termsAccepted: termsAccepted,
-                    createdAt: Date.now(),
-                    enrolledCourses: [],
-                    progress: {}
+                    displayName: name, email: email, role: 'student', profilePictureURL: profilePictureURL,
+                    personalDetails: { dateOfBirth: dob, gender: gender },
+                    contactInfo: { phone: phone, address: { street: addressStreet, city: addressCity, state: addressState, zip: addressZip, country: addressCountry }},
+                    academicBackground: { previousEducation: prevEducation, transcriptsURL: transcriptsURL },
+                    programSelection: { degree: degree, major: major, minor: minor },
+                    emergencyContact: { name: emergencyName, relationship: emergencyRelationship, phone: emergencyPhone },
+                    termsAccepted: termsAccepted, createdAt: Date.now(),
+                    feesBalance: { amount: 27500, currency: "MWK" },
+                    enrolledCourses: [], progress: {}
                 };
 
                 const userDbRef = ref(db, 'users/' + user.uid);
-                await set(userDbRef, userData);
-
-                console.log('User signed up and all data stored:', user.uid);
-                signupForm.reset();
-                // onAuthStateChanged will handle UI updates
-
+                try {
+                    await set(userDbRef, userData);
+                    console.log('User signed up and all data stored in Realtime Database for UID:', user.uid);
+                    signupForm.reset();
+                } catch (dbSetError) {
+                    console.error('FATAL: Failed to save user data to Realtime Database after signup and file uploads for UID:', user.uid, dbSetError);
+                    if(authError) authError.textContent = `Signup successful, but failed to save profile data: ${dbSetError.message}. Please contact support.`;
+                }
             } catch (error) {
-                console.error('Signup process error:', error);
+                console.error('Signup process error (Auth or File Upload):', error);
                 if(authError) authError.textContent = `Signup Error: ${error.message}`;
             }
         });
     }
 
-    // Login
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
+            // ... (login logic remains the same) ...
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
 
@@ -216,7 +170,6 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                     console.log('User logged in:', userCredential.user.uid);
                     loginForm.reset();
                     if(authError) authError.textContent = '';
-                    // User will be managed by onAuthStateChanged
                 })
                 .catch(error => {
                     console.error('Login error:', error);
@@ -225,21 +178,15 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
         });
     }
 
-    // Logout
     function handleLogout() {
         signOut(auth).then(() => {
             console.log('User logged out');
             window.location.href = 'index.html';
-        }).catch(error => {
-            console.error('Logout error:', error);
-        });
+        }).catch(error => console.error('Logout error:', error));
     }
 
-    if (logoutButton) {
-        logoutButton.addEventListener('click', handleLogout);
-    }
+    if (logoutButton) logoutButton.addEventListener('click', handleLogout);
 
-    // Auth state listener
     onAuthStateChanged(auth, user => {
         if (user) {
             console.log('onAuthStateChanged - User:', user);
@@ -253,6 +200,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     });
 
     function updateUIForLoggedInUser(user) {
+        // ... (UI update logic for login/logout nav, auth section visibility) ...
         if (loginLogoutNav) {
             loginLogoutNav.textContent = 'Logout';
             loginLogoutNav.removeEventListener('click', showAuthSection);
@@ -273,14 +221,15 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
         } else if (currentPage === 'profile.html') {
              if(mainContentPages.profile) mainContentPages.profile.classList.remove('hidden');
         } else if (currentPage === 'course.html') {
-            if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden');
+            // Access control for course.html is now handled within loadCourseDetailsWithAccessCheck
+            // if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden');
         } else if (currentPage === 'admin.html') {
-            // Further checks for admin role will happen in admin-specific logic
             if(mainContentPages.admin) mainContentPages.admin.classList.remove('hidden');
         }
     }
 
     function showAuthSection(e){
+        // ... (showAuthSection logic remains the same) ...
         if(e) e.preventDefault();
         if (authSection) authSection.classList.remove('hidden');
         if (welcomeMessage) welcomeMessage.classList.add('hidden');
@@ -291,6 +240,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     }
 
     function updateUIForLoggedOutUser() {
+        // ... (UI update logic for logged out user remains largely the same) ...
         if (loginLogoutNav) {
             loginLogoutNav.textContent = 'Login';
             loginLogoutNav.removeEventListener('click', handleLogout);
@@ -320,12 +270,14 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     // --- USER DATA HANDLING ---
 
     function clearProfilePageData() {
+        // ... (clearProfilePageData logic remains the same) ...
         const profileFieldsIds = [
             'user-name', 'user-email', 'user-role', 'user-dob', 'user-gender',
             'user-phone', 'user-address-street', 'user-address-city', 'user-address-state',
             'user-address-zip', 'user-address-country', 'user-prev-education',
             'user-degree', 'user-major', 'user-minor', 'user-emergency-name',
-            'user-emergency-relationship', 'user-emergency-phone', 'user-terms-accepted'
+            'user-emergency-relationship', 'user-emergency-phone', 'user-terms-accepted',
+            'user-fees-balance' // Added fees balance
         ];
         profileFieldsIds.forEach(id => {
             const el = document.getElementById(id);
@@ -333,13 +285,13 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
         });
         const profilePicEl = document.getElementById('profile-picture');
         if (profilePicEl) {
-            profilePicEl.src = '#'; // Use benign src
-            profilePicEl.style.display = 'block'; // Or 'none' if you prefer to hide it
+            profilePicEl.src = '#';
+            profilePicEl.style.display = 'block';
         }
 
         const transcriptsLink = document.getElementById('user-transcripts-link');
         const transcriptsNA = document.getElementById('user-transcripts-na');
-        if (transcriptsLink && transcriptsNA) { // Check both exist
+        if (transcriptsLink && transcriptsNA) {
             transcriptsLink.classList.add('hidden');
             transcriptsNA.classList.remove('hidden');
             transcriptsNA.textContent = 'N/A';
@@ -347,11 +299,12 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     }
 
     function loadUserData(user) {
-        console.log("--- loadUserData: CALLED for UID: " + user.uid + " ---"); // New Log
-        console.log("loadUserData: User object passed:", user); // New Log
+        // ... (loadUserData logic with detailed logging and profile population remains the same) ...
+        console.log("--- loadUserData: CALLED for UID: " + user.uid + " ---");
+        console.log("loadUserData: User object passed:", user);
 
         const userDbRef = ref(db, 'users/' + user.uid);
-        console.log("loadUserData: ABOUT TO CALL get() for path: " + userDbRef.toString()); // New Log
+        console.log("loadUserData: ABOUT TO CALL get() for path: " + userDbRef.toString());
 
         get(userDbRef).then((snapshot) => {
             console.log('loadUserData - Raw snapshot value for UID ' + user.uid + ':', snapshot.val());
@@ -388,8 +341,8 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                             profilePicEl.src = userData.profilePictureURL;
                             profilePicEl.style.display = 'block';
                         } else {
-                            profilePicEl.src = '#'; // Benign src
-                            profilePicEl.style.display = 'block'; // Or 'none'
+                            profilePicEl.src = '#';
+                            profilePicEl.style.display = 'block';
                         }
                     }
 
@@ -431,6 +384,15 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                     setText('user-emergency-relationship', userData.emergencyContact?.relationship);
                     setText('user-emergency-phone', userData.emergencyContact?.phone);
                     setText('user-terms-accepted', userData.termsAccepted ? 'Yes' : 'No');
+
+                    const feesBalanceEl = document.getElementById('user-fees-balance');
+                    if (feesBalanceEl) {
+                        if (userData.feesBalance) {
+                            feesBalanceEl.textContent = `${userData.feesBalance.currency} ${userData.feesBalance.amount.toLocaleString()}`;
+                        } else {
+                            feesBalanceEl.textContent = 'N/A';
+                        }
+                    }
                 }
 
                 if (window.location.pathname.endsWith('dashboard.html')) {
@@ -459,18 +421,14 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
             }
         });
 
+        // If on course detail page, load its details
         if (window.location.pathname.endsWith('course.html')) {
-            const urlParams = new URLSearchParams(window.location.search);
-            const courseId = urlParams.get('id');
-            if (courseId) {
-                loadCourseDetails(courseId, user.uid);
-            } else {
-                 if(mainContentPages.courseDetail) mainContentPages.courseDetail.innerHTML = '<p>Course ID not found.</p>';
-            }
+           loadCourseDetailsWithAccessCheck(user); // Changed to new access check function
         }
     }
 
     async function loadAcademicProgress(userId) {
+        // ... (loadAcademicProgress logic remains the same) ...
         const coursesInProgressEl = document.getElementById('courses-in-progress');
         const assignmentsDueEl = document.getElementById('assignments-due');
         const upcomingExamsEl = document.getElementById('upcoming-exams');
@@ -528,6 +486,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     // --- COURSE & PORTAL FUNCTIONALITY ---
 
     async function loadAllCourses(currentUserId) {
+        // ... (loadAllCourses logic remains the same) ...
         const coursesDbRef = ref(db, 'courses');
         const coursesContainer = document.getElementById('courses-container');
         if (!coursesContainer) return;
@@ -572,6 +531,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     }
 
     async function enrollInCourse(userId, courseId, button) {
+        // ... (enrollInCourse logic remains the same - sets currentStatus to 'pending_approval') ...
         const userCoursesDbRef = ref(db, 'users/' + userId + '/enrolledCourses');
         try {
             const snapshot = await get(userCoursesDbRef);
@@ -594,7 +554,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                     courseId: courseId,
                     enrollmentDate: Date.now(),
                     title: course.title || "Untitled Course",
-                    currentStatus: 'active',
+                    currentStatus: 'pending_approval',
                     lastAccessed: Date.now()
                 };
 
@@ -602,10 +562,10 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                 await set(userCoursesDbRef, enrolledCoursesArray);
 
                 console.log(`User ${userId} enrolled in course ${courseId}`);
-                alert(`Successfully enrolled in ${course.title || "the course"}!`);
+                alert(`Successfully enrolled in ${course.title || "the course"}! Status: Pending Approval.`);
 
                 if (button) {
-                    button.textContent = 'Enrolled';
+                    button.textContent = 'Enrollment Pending'; // Changed text
                     button.disabled = true;
                     button.classList.add('btn-secondary');
                 }
@@ -618,12 +578,18 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                     assignmentsSubmitted: 0
                 });
             } else {
-                alert('You are already enrolled in this course.');
+                // If already enrolled, check current status to update button text if needed
+                const existingEnrollment = enrolledCoursesArray.find(enrollment => enrollment.courseId === courseId);
                 if (button) {
-                    button.textContent = 'Enrolled';
+                    if (existingEnrollment && existingEnrollment.currentStatus === 'pending_approval') {
+                        button.textContent = 'Enrollment Pending';
+                    } else {
+                        button.textContent = 'Enrolled';
+                    }
                     button.disabled = true;
                     button.classList.add('btn-secondary');
                 }
+                 alert('You are already enrolled in this course or your enrollment is pending.');
             }
         } catch (error) {
             console.error("Error enrolling in course:", error);
@@ -654,16 +620,30 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                     const totalModules = course.modules ? course.modules.length : 0;
                     const progressPercent = totalModules > 0 ? (completedModulesCount / totalModules) * 100 : 0;
 
+                    let statusTextHtml = '';
+                    let viewButtonHtml = `<a href="course.html?id=${courseId}" class="btn">View Course</a>`;
+
+                    if (enrollment.currentStatus === 'pending_approval') {
+                        statusTextHtml = '<p style="color: orange; font-weight: bold;">Status: Pending Approval</p>';
+                        viewButtonHtml = `<button class="btn btn-secondary" disabled title="Your enrollment is pending approval">View Course</button>`;
+                    } else if (enrollment.currentStatus === 'active') {
+                        statusTextHtml = '<p style="color: green; font-weight: bold;">Status: Active</p>';
+                    } else if (enrollment.currentStatus) { // Handle other potential statuses
+                         statusTextHtml = `<p style="font-weight: bold;">Status: ${enrollment.currentStatus.replace('_', ' ')}</p>`;
+                    }
+
+
                     const courseCard = document.createElement('div');
                     courseCard.classList.add('course-card');
                     courseCard.innerHTML = `
-                        <h3>${course.title}</h3>
+                        <h3>${enrollment.title || course.title}</h3>
+                        ${statusTextHtml}
                         <p>${course.description ? course.description.substring(0,100) + '...' : 'No description.'}</p>
                         <div class="progress-bar-container">
                             <div class="progress-bar" style="width: ${progressPercent.toFixed(0)}%;">${progressPercent.toFixed(0)}%</div>
                         </div>
                         <p>Modules: ${completedModulesCount} / ${totalModules} completed</p>
-                        <a href="course.html?id=${courseId}" class="btn">View Course</a>
+                        ${viewButtonHtml}
                     `;
                     enrolledCoursesList.appendChild(courseCard);
                 }
@@ -674,6 +654,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     }
 
     function loadAnnouncements(enrolledCoursesData) {
+        // ... (loadAnnouncements logic remains the same) ...
         const announcementsList = document.getElementById('announcements-list');
         if (!announcementsList) return;
         announcementsList.innerHTML = '';
@@ -718,21 +699,68 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
         });
     }
 
-    async function loadCourseDetails(courseId, userId) {
+    // New function to check access before loading course details
+    async function loadCourseDetailsWithAccessCheck(user) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const courseId = urlParams.get('id');
+        const mainContent = mainContentPages.courseDetail;
+
+        if (!mainContent) return; // Should not happen if on course.html
+
+        if (!courseId) {
+            mainContent.innerHTML = '<p>Course ID not found in URL.</p>';
+            return;
+        }
+
+        if (!user) { // Should be caught by onAuthStateChanged redirect, but good for robustness
+            mainContent.innerHTML = '<p>You must be logged in to view course details.</p>';
+            return;
+        }
+
+        try {
+            const userEnrollmentsRef = ref(db, `users/${user.uid}/enrolledCourses`);
+            const enrollmentsSnapshot = await get(userEnrollmentsRef);
+            const enrolledCourses = enrollmentsSnapshot.val() || [];
+
+            const currentEnrollment = enrolledCourses.find(ec => ec.courseId === courseId);
+
+            if (currentEnrollment && currentEnrollment.currentStatus === 'active') {
+                if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden'); // Show content area
+                loadCourseDetails(courseId, user.uid); // Proceed to load full details
+            } else if (currentEnrollment && currentEnrollment.currentStatus === 'pending_approval') {
+                mainContent.innerHTML = `<h1>${currentEnrollment.title || 'Course'}</h1><p style="color: orange; font-weight: bold;">Your enrollment for this course is pending approval. You cannot access course materials yet.</p><p><a href="dashboard.html">Go to Dashboard</a></p>`;
+                if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden'); // Show message area
+            } else {
+                // Not enrolled or status is not active/pending (e.g. dropped, completed and archived etc.)
+                mainContent.innerHTML = `<p>You are not actively enrolled in this course or your enrollment is not approved. <a href="index.html">Browse courses</a> or check your <a href="dashboard.html">dashboard</a>.</p>`;
+                if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden');
+            }
+        } catch (error) {
+            console.error("Error checking course enrollment status:", error);
+            mainContent.innerHTML = "<p>Error checking your enrollment status. Please try again.</p>";
+            if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden');
+        }
+    }
+
+
+    async function loadCourseDetails(courseId, userId) { // This is the original function, now called by loadCourseDetailsWithAccessCheck
+        // ... (loadCourseDetails logic remains the same) ...
         const courseTitleEl = document.getElementById('course-title');
         const courseSyllabusEl = document.getElementById('course-syllabus');
         const modulesListEl = document.getElementById('modules-list');
         const courseCodeEl = document.getElementById('course-code-display');
         const courseCreditsEl = document.getElementById('course-credits-display');
-        const mainContent = mainContentPages.courseDetail;
+        const mainContent = mainContentPages.courseDetail; // Keep for error messages inside
 
-        if (!courseTitleEl || !courseSyllabusEl || !modulesListEl || !mainContent) return;
+        // No need to check mainContentPages.courseDetail here as loadCourseDetailsWithAccessCheck does it.
+        // if (!courseTitleEl || !courseSyllabusEl || !modulesListEl || !mainContent) return; // Redundant
 
         try {
             const courseSnapshot = await get(ref(db, 'courses/' + courseId));
             const course = courseSnapshot.val();
             if (!course) {
-                mainContent.innerHTML = '<p>Course not found.</p>';
+                // This case should ideally be caught by enrollment check, but as a fallback:
+                if(mainContent) mainContent.innerHTML = '<p>Course data not found.</p>';
                 return;
             }
 
@@ -784,8 +812,8 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
             await loadCourseAssessments(courseId, userId);
 
         } catch (error) {
-            console.error("Error loading course details:", error);
-            mainContent.innerHTML = '<p>Error loading course details.</p>';
+            console.error("Error loading course details content:", error);
+            if(mainContent) mainContent.innerHTML = '<p>Error loading course details content.</p>';
         }
 
         const uploadBtn = document.getElementById('upload-assignment-btn');
@@ -797,6 +825,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     }
 
     async function loadCourseAssessments(courseId, userId) {
+        // ... (loadCourseAssessments logic remains the same) ...
         const examsListEl = document.getElementById('exams-list');
         const assignmentsListEl = document.getElementById('assignments-list');
 
@@ -864,6 +893,7 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     }
 
     async function markModuleComplete(userId, courseId, moduleId, button) {
+        // ... (markModuleComplete logic remains the same) ...
         const progressDbRef = ref(db, `users/${userId}/progress/${courseId}/completedModules`);
         try {
             const snapshot = await get(progressDbRef);
@@ -893,43 +923,9 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
         }
     }
 
-    if (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/')) {
-        if (!auth.currentUser) {
-            if (authSection) authSection.classList.remove('hidden');
-            if (welcomeMessage) welcomeMessage.classList.add('hidden');
-            const coursesContainer = document.getElementById('courses-container');
-            if (coursesContainer) coursesContainer.innerHTML = '<p>Please log in or sign up to see courses.</p>';
-        } else {
-             if (authSection) authSection.classList.add('hidden');
-             if (welcomeMessage) welcomeMessage.classList.remove('hidden');
-        }
-    }
-
-    if (window.location.pathname.endsWith('admin.html')) {
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                const userDbRef = ref(db, 'users/' + user.uid);
-                get(userDbRef).then(snapshot => {
-                    const userData = snapshot.val();
-                    if (!userData || (userData.role !== 'admin' && userData.role !== 'faculty')) {
-                        console.warn('User is not admin/faculty. Redirecting.');
-                        window.location.href = 'index.html';
-                    } else {
-                        console.log('Admin/Faculty user accessed admin page.');
-                        initializeAdminPage();
-                    }
-                }).catch(error => {
-                    console.error("Error fetching user role for admin page:", error);
-                    window.location.href = 'index.html';
-                });
-            } else {
-                console.warn('User not logged in. Redirecting from admin page.');
-                window.location.href = 'index.html';
-            }
-        });
-    }
-
+    // --- Admin Page Specific Logic (within initializeAdminPage) ---
     function initializeAdminPage() {
+        // ... (initializeAdminPage with createCourseForm listener remains the same) ...
         const createCourseForm = document.getElementById('create-course-form');
         const createCourseMessageEl = document.getElementById('create-course-message');
 
@@ -957,22 +953,13 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                     content: ""
                 }));
 
-                const coursesRefPath = ref(db, 'courses'); // Corrected: get ref first
-                const newCourseRef = push(coursesRefPath); // Then push to the ref
+                const coursesRefPath = ref(db, 'courses');
+                const newCourseRef = push(coursesRefPath);
 
                 const newCourseData = {
-                    title: title,
-                    code: code,
-                    description: description,
-                    creditHours: creditHours,
-                    modules: modules,
-                    instructor: "",
-                    department: "",
-                    level: "",
-                    term: "",
-                    exams: {},
-                    assignments: {},
-                    createdAt: Date.now(),
+                    title: title, code: code, description: description, creditHours: creditHours,
+                    modules: modules, instructor: "", department: "", level: "", term: "",
+                    exams: {}, assignments: {}, createdAt: Date.now(),
                 };
 
                 try {
@@ -991,9 +978,178 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
                 }
             });
         }
+
+        const adminUserSelect = document.getElementById('admin-user-select');
+        const adminSelectedUserDetailsDiv = document.getElementById('admin-selected-user-details');
+        const adminSelectedUserNameEl = document.getElementById('admin-selected-user-name');
+        const adminSelectedUserFeesEl = document.getElementById('admin-selected-user-fees');
+        const adminNewFeesAmountInput = document.getElementById('admin-new-fees-amount');
+        const adminNewFeesCurrencyInput = document.getElementById('admin-new-fees-currency');
+        const adminUpdateFeesBtn = document.getElementById('admin-update-fees-btn');
+        const adminUpdateFeesMessageEl = document.getElementById('admin-update-fees-message');
+        const adminPendingEnrollmentsDiv = document.getElementById('admin-pending-enrollments');
+        let allUsersData = {};
+
+        async function loadAllUsersForAdmin() {
+            // ... (loadAllUsersForAdmin logic remains the same) ...
+            if (!adminUserSelect) return;
+            adminUserSelect.innerHTML = '<option value="">Loading users...</option>';
+            try {
+                const usersSnapshot = await get(ref(db, 'users'));
+                allUsersData = usersSnapshot.val();
+                adminUserSelect.innerHTML = '<option value="">-- Select a User --</option>';
+                if (allUsersData) {
+                    for (const userId in allUsersData) {
+                        const userData = allUsersData[userId];
+                        const option = document.createElement('option');
+                        option.value = userId;
+                        option.textContent = `${userData.displayName} (${userData.email})`;
+                        adminUserSelect.appendChild(option);
+                    }
+                } else {
+                    adminUserSelect.innerHTML = '<option value="">No users found.</option>';
+                }
+            } catch (error) {
+                console.error("Error loading users for admin:", error);
+                adminUserSelect.innerHTML = '<option value="">Error loading users.</option>';
+            }
+        }
+
+        async function displayUserDetailsForAdmin(userId) {
+            // ... (displayUserDetailsForAdmin logic for fees and enrollments remains the same) ...
+            if (!adminSelectedUserDetailsDiv || !userId || !allUsersData[userId]) {
+                if(adminSelectedUserDetailsDiv) adminSelectedUserDetailsDiv.classList.add('hidden');
+                return;
+            }
+            const userData = allUsersData[userId];
+
+            if(adminSelectedUserNameEl) adminSelectedUserNameEl.textContent = `Managing: ${userData.displayName}`;
+            if(adminSelectedUserFeesEl) {
+                if (userData.feesBalance) {
+                    adminSelectedUserFeesEl.textContent = `${userData.feesBalance.currency} ${userData.feesBalance.amount.toLocaleString()}`;
+                } else {
+                    adminSelectedUserFeesEl.textContent = 'N/A (Default MWK 27,500 will be set if updated)';
+                }
+            }
+            if(adminNewFeesAmountInput && userData.feesBalance) adminNewFeesAmountInput.value = userData.feesBalance.amount;
+            else if(adminNewFeesAmountInput) adminNewFeesAmountInput.value = '';
+            if(adminNewFeesCurrencyInput && userData.feesBalance) adminNewFeesCurrencyInput.value = userData.feesBalance.currency;
+            else if(adminNewFeesCurrencyInput) adminNewFeesCurrencyInput.value = 'MWK';
+
+
+            if(adminPendingEnrollmentsDiv) {
+                adminPendingEnrollmentsDiv.innerHTML = '<p>Loading pending enrollments...</p>';
+                const enrolledCourses = userData.enrolledCourses || [];
+                const pendingEnrollments = enrolledCourses.filter(ec => ec.currentStatus === 'pending_approval');
+
+                if (pendingEnrollments.length > 0) {
+                    adminPendingEnrollmentsDiv.innerHTML = '<h5>Pending Course Approvals:</h5>';
+                    const ul = document.createElement('ul');
+                    ul.style.listStyleType = 'none';
+                    ul.style.paddingLeft = '0';
+                    pendingEnrollments.forEach(enrollment => {
+                        const li = document.createElement('li');
+                        li.style.marginBottom = '10px';
+                        li.innerHTML = `
+                            <span>${enrollment.title || enrollment.courseId}</span>
+                            <button class="btn btn-secondary btn-sm approve-enrollment-btn" data-course-id="${enrollment.courseId}" style="margin-left: 10px; padding: 5px 10px; font-size: 0.8em;">Approve</button>
+                        `;
+                        ul.appendChild(li);
+                    });
+                    adminPendingEnrollmentsDiv.appendChild(ul);
+
+                    document.querySelectorAll('.approve-enrollment-btn').forEach(button => {
+                        button.addEventListener('click', async () => {
+                            const courseIdToApprove = button.dataset.courseId;
+                            await approveCourseEnrollment(userId, courseIdToApprove);
+                            displayUserDetailsForAdmin(userId);
+                        });
+                    });
+
+                } else {
+                    adminPendingEnrollmentsDiv.innerHTML = '<p>No pending course enrollments for this user.</p>';
+                }
+            }
+            if(adminSelectedUserDetailsDiv) adminSelectedUserDetailsDiv.classList.remove('hidden');
+        }
+
+        if(adminUserSelect) {
+            adminUserSelect.addEventListener('change', () => {
+                const selectedUserId = adminUserSelect.value;
+                if (selectedUserId) {
+                    displayUserDetailsForAdmin(selectedUserId);
+                } else {
+                    if(adminSelectedUserDetailsDiv) adminSelectedUserDetailsDiv.classList.add('hidden');
+                }
+            });
+        }
+
+        if(adminUpdateFeesBtn) {
+            adminUpdateFeesBtn.addEventListener('click', async () => {
+                // ... (update fees button logic remains the same) ...
+                const selectedUserId = adminUserSelect.value;
+                if (!selectedUserId) {
+                    if(adminUpdateFeesMessageEl) adminUpdateFeesMessageEl.textContent = "Please select a user first.";
+                    return;
+                }
+                const newAmount = parseFloat(adminNewFeesAmountInput.value);
+                const newCurrency = adminNewFeesCurrencyInput.value || "MWK";
+
+                if (isNaN(newAmount)) {
+                    if(adminUpdateFeesMessageEl) adminUpdateFeesMessageEl.textContent = "Please enter a valid amount.";
+                    return;
+                }
+                try {
+                    const feesRef = ref(db, `users/${selectedUserId}/feesBalance`);
+                    await set(feesRef, { amount: newAmount, currency: newCurrency });
+                    if(adminUpdateFeesMessageEl) {
+                        adminUpdateFeesMessageEl.textContent = "Fees updated successfully!";
+                        adminUpdateFeesMessageEl.style.color = 'green';
+                    }
+                    if(adminSelectedUserFeesEl) adminSelectedUserFeesEl.textContent = `${newCurrency} ${newAmount.toLocaleString()}`;
+                    if(allUsersData[selectedUserId]) allUsersData[selectedUserId].feesBalance = { amount: newAmount, currency: newCurrency };
+
+                } catch (error) {
+                    console.error("Error updating fees:", error);
+                     if(adminUpdateFeesMessageEl) {
+                        adminUpdateFeesMessageEl.textContent = `Error updating fees: ${error.message}`;
+                        adminUpdateFeesMessageEl.style.color = 'var(--mit-red)';
+                    }
+                }
+            });
+        }
+
+        loadAllUsersForAdmin();
+    }
+
+    async function approveCourseEnrollment(userId, courseIdToApprove) {
+        // ... (approveCourseEnrollment logic remains the same) ...
+        const userEnrollmentsRef = ref(db, `users/${userId}/enrolledCourses`);
+        try {
+            const snapshot = await get(userEnrollmentsRef);
+            let enrolledCourses = snapshot.val() || [];
+            if (!Array.isArray(enrolledCourses)) enrolledCourses = [];
+
+            const courseIndex = enrolledCourses.findIndex(ec => ec.courseId === courseIdToApprove && ec.currentStatus === 'pending_approval');
+
+            if (courseIndex > -1) {
+                enrolledCourses[courseIndex].currentStatus = 'active';
+                enrolledCourses[courseIndex].lastAccessed = Date.now();
+                await set(userEnrollmentsRef, enrolledCourses);
+                console.log(`Enrollment for course ${courseIdToApprove} approved for user ${userId}.`);
+                alert(`Enrollment for course ${courseIdToApprove} approved.`);
+            } else {
+                console.warn(`Could not find pending enrollment for course ${courseIdToApprove} for user ${userId}.`);
+                alert(`Could not find pending enrollment for course ${courseIdToApprove}. It might have been already approved or does not exist.`);
+            }
+        } catch (error) {
+            console.error("Error approving enrollment:", error);
+            alert(`Error approving enrollment: ${error.message}`);
+        }
     }
 
     async function ensureSampleDataIsPopulated() {
+        // ... (ensureSampleDataIsPopulated logic remains the same) ...
         try {
             const coursesSnapshot = await get(ref(db, 'courses'));
             if (!coursesSnapshot.exists() || !coursesSnapshot.val()) {
@@ -1008,6 +1164,41 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
             console.error("Error during sample data check/population:", error);
         }
     }
+
+    // Initial Page Load Logic
+    if (window.location.pathname.endsWith('admin.html')) {
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                const userDbRef = ref(db, 'users/' + user.uid);
+                get(userDbRef).then(snapshot => {
+                    const userData = snapshot.val();
+                    if (!userData || (userData.role !== 'admin' && userData.role !== 'faculty')) {
+                        window.location.href = 'index.html';
+                    } else {
+                        initializeAdminPage();
+                    }
+                }).catch(() => window.location.href = 'index.html');
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+    } else if (window.location.pathname.endsWith('course.html')) {
+        onAuthStateChanged(auth, user => {
+            if(user) {
+                loadCourseDetailsWithAccessCheck(user);
+            } else {
+                // if not logged in and trying to access course page, redirect
+                const mainContent = mainContentPages.courseDetail;
+                if(mainContent) mainContent.innerHTML = '<p>You must be logged in to view course details. Redirecting...</p>';
+                setTimeout(() => window.location.href = 'index.html', 2000);
+            }
+        });
+    } else { // For index.html, dashboard.html, profile.html
+         onAuthStateChanged(auth, user => { // This will trigger loadUserData if user is present
+            // Handled by the main onAuthStateChanged listener
+         });
+    }
+
 
     if (auth && db) {
         await ensureSampleDataIsPopulated();

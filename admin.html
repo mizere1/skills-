@@ -100,13 +100,45 @@
             <p id="create-course-message" style="margin-top: 1em;"></p>
         </section>
 
-        <section id="admin-course-list-container" class="form-section hidden"> <!-- Hidden for now, can be enabled later -->
-            <h2>Existing Courses</h2>
-            <div id="admin-course-list" class="course-list">
-                <!-- Existing courses could be listed here by app.js -->
-                <p>Loading courses...</p>
+        <section id="user-management-section" class="form-section">
+            <h2>User Management</h2>
+            <div id="admin-user-list-container">
+                <label for="admin-user-select">Select User:</label>
+                <select id="admin-user-select" style="margin-bottom: 1em; padding: 8px; min-width: 300px;">
+                    <option value="">Loading users...</option>
+                </select>
+            </div>
+
+            <div id="admin-selected-user-details" class="hidden">
+                <h3 id="admin-selected-user-name"></h3>
+
+                <h4>Fees Management</h4>
+                <p>Current Fees Balance: <strong id="admin-selected-user-fees">N/A</strong></p>
+                <div>
+                    <label for="admin-new-fees-amount">Set New Amount:</label>
+                    <input type="number" id="admin-new-fees-amount" placeholder="e.g., 27500" step="any">
+                </div>
+                <div>
+                    <label for="admin-new-fees-currency">Currency:</label>
+                    <input type="text" id="admin-new-fees-currency" value="MWK">
+                </div>
+                <button id="admin-update-fees-btn" class="btn">Update Fees</button>
+                <p id="admin-update-fees-message" style="margin-top: 0.5em;"></p>
+
+                <h4>Enrollment Approvals</h4>
+                <div id="admin-pending-enrollments">
+                    <p>Select a user to see pending enrollments.</p>
+                </div>
             </div>
         </section>
+
+        <!-- This section can be re-enabled later if needed for just listing courses -->
+        <!-- <section id="admin-course-list-container" class="form-section hidden">
+            <h2>Existing Courses</h2>
+            <div id="admin-course-list" class="course-list">
+                <p>Loading courses...</p>
+            </div>
+        </section> -->
 
     </main>
 
