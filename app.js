@@ -225,10 +225,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (document.getElementById('user-email')) document.getElementById('user-email').textContent = userData.email;
                 if (document.getElementById('user-role')) document.getElementById('user-role').textContent = userData.role;
 
-                // If on dashboard, load enrolled courses
+                // If on dashboard, load data
                 if (window.location.pathname.endsWith('dashboard.html')) {
-                    loadEnrolledCourses(user.uid, userData.enrolledCourses || [], userData.progress || {});
-                    loadAnnouncements(userData.enrolledCourses || []);
+                    const enrolledCoursesList = userData.enrolledCourses || [];
+                    loadEnrolledCourses(user.uid, enrolledCoursesList, userData.progress || {});
+                    loadAnnouncements(enrolledCoursesList);
+                    loadAcademicProgress(user.uid); // Call new dashboard function
                 }
             }
         }, (error) => {
@@ -244,6 +246,68 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                  if(mainContentPages.courseDetail) mainContentPages.courseDetail.innerHTML = '<p>Course ID not found.</p>';
             }
+        }
+    }
+
+    // Add to app.js
+    async function loadAcademicProgress(userId) {
+        const coursesInProgressEl = document.getElementById('courses-in-progress');
+        const assignmentsDueEl = document.getElementById('assignments-due');
+        const upcomingExamsEl = document.getElementById('upcoming-exams');
+
+        // Ensure elements exist (this function might be called from loadUserData on any page)
+        if (!coursesInProgressEl || !assignmentsDueEl || !upcomingExamsEl) {
+            // console.log("Academic progress elements not found on this page.");
+            return;
+        }
+
+        try {
+            // Get user's enrolled courses
+            const enrolledCoursesSnapshot = await get(ref(db, `users/${userId}/enrolledCourses`));
+            const enrolledCourses = enrolledCoursesSnapshot.val() || [];
+
+            coursesInProgressEl.textContent = enrolledCourses.length;
+
+            let assignmentsDueCount = 0;
+            let upcomingExamsCount = 0;
+            const now = Date.now();
+
+            for (const courseEnrollment of enrolledCourses) {
+                // Ensure courseEnrollment is an object and has courseId, otherwise skip
+                const courseId = typeof courseEnrollment === 'object' && courseEnrollment !== null ? courseEnrollment.courseId : null;
+                if (!courseId) continue;
+
+                // Get assignments
+                const assignmentsSnapshot = await get(ref(db, `courses/${courseId}/assignments`));
+                const assignments = assignmentsSnapshot.val();
+                if (assignments) {
+                    Object.values(assignments).forEach(assignment => {
+                        if (assignment.dueDate > now) {
+                            assignmentsDueCount++;
+                        }
+                    });
+                }
+
+                // Get exams
+                const examsSnapshot = await get(ref(db, `courses/${courseId}/exams`));
+                const exams = examsSnapshot.val();
+                if (exams) {
+                    Object.values(exams).forEach(exam => {
+                        if (exam.date > now) {
+                            upcomingExamsCount++;
+                        }
+                    });
+                }
+            }
+
+            assignmentsDueEl.textContent = assignmentsDueCount;
+            upcomingExamsEl.textContent = upcomingExamsCount;
+
+        } catch (error) {
+            console.error("Error loading academic progress:", error);
+            coursesInProgressEl.textContent = 'N/A';
+            assignmentsDueEl.textContent = 'N/A';
+            upcomingExamsEl.textContent = 'N/A';
         }
     }
 
@@ -296,27 +360,57 @@ document.addEventListener('DOMContentLoaded', () => {
         const userCoursesDbRef = ref(db, 'users/' + userId + '/enrolledCourses');
         try {
             const snapshot = await get(userCoursesDbRef);
-            let enrolledCourses = snapshot.val() || [];
-            if (!Array.isArray(enrolledCourses)) enrolledCourses = []; // Ensure it's an array
+            let enrolledCoursesArray = snapshot.val() || [];
+            if (!Array.isArray(enrolledCoursesArray)) enrolledCoursesArray = [];
 
-            if (!enrolledCourses.includes(courseId)) {
-                enrolledCourses.push(courseId);
-                await set(userCoursesDbRef, enrolledCourses);
+            // Check if already enrolled by courseId
+            const isAlreadyEnrolled = enrolledCoursesArray.some(enrollment => enrollment.courseId === courseId);
+
+            if (!isAlreadyEnrolled) {
+                // Get course details to store enrollment date and other metadata
+                const courseSnapshot = await get(ref(db, 'courses/' + courseId));
+                const course = courseSnapshot.val();
+
+                if (!course) {
+                    alert("Error: Course details not found. Cannot enroll.");
+                    console.error("Course details not found for courseId:", courseId);
+                    return;
+                }
+
+                const enrollmentData = {
+                    courseId: courseId,
+                    enrollmentDate: Date.now(),
+                    title: course.title || "Untitled Course", // Fallback for title
+                    currentStatus: 'active',
+                    lastAccessed: Date.now()
+                };
+
+                enrolledCoursesArray.push(enrollmentData);
+                await set(userCoursesDbRef, enrolledCoursesArray);
 
                 console.log(`User ${userId} enrolled in course ${courseId}`);
-                alert(`Successfully enrolled in course!`);
+                alert(`Successfully enrolled in ${course.title || "the course"}!`);
+
                 if (button) {
                     button.textContent = 'Enrolled';
                     button.disabled = true;
+                    button.classList.add('btn-secondary'); // As per new CSS
                 }
-                // Initialize progress for this course
+
+                // Initialize progress with more details
                 const userProgressDbRef = ref(db, `users/${userId}/progress/${courseId}`);
-                await set(userProgressDbRef, { completedModules: [] }); // Store completed modules as an array
+                await set(userProgressDbRef, {
+                    completedModules: [],
+                    lastActivity: Date.now(),
+                    totalModules: course.modules ? course.modules.length : 0,
+                    assignmentsSubmitted: 0
+                });
             } else {
                 alert('You are already enrolled in this course.');
                 if (button) {
                     button.textContent = 'Enrolled';
                     button.disabled = true;
+                    button.classList.add('btn-secondary'); // As per new CSS
                 }
             }
         } catch (error) {
@@ -326,22 +420,25 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Load enrolled courses on the Dashboard
-    async function loadEnrolledCourses(userId, enrolledCourseIds, userProgress) {
+    async function loadEnrolledCourses(userId, enrolledCoursesData, userProgress) { // enrolledCoursesData is now an array of objects
         const enrolledCoursesList = document.getElementById('enrolled-courses-list');
         if (!enrolledCoursesList) return;
         enrolledCoursesList.innerHTML = ''; // Clear previous list
 
-        if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
+        if (!enrolledCoursesData || enrolledCoursesData.length === 0) {
             enrolledCoursesList.innerHTML = '<p>You are not enrolled in any courses yet. <a href="index.html">Browse courses</a>.</p>';
             return;
         }
 
-        for (const courseId of enrolledCourseIds) {
+        for (const enrollment of enrolledCoursesData) {
+            const courseId = enrollment.courseId; // Get courseId from the enrollment object
+            if (!courseId) continue; // Skip if no courseId
+
             try {
                 const courseSnapshot = await get(ref(db, 'courses/' + courseId));
                 const course = courseSnapshot.val();
                 if (course) {
-                    const courseProg = userProgress[courseId] || { completedModules: [] };
+                    const courseProg = userProgress[courseId] || { completedModules: [], totalModules: course.modules ? course.modules.length : 0 };
                     const completedModulesCount = Array.isArray(courseProg.completedModules) ? courseProg.completedModules.length : 0;
                     const totalModules = course.modules ? course.modules.length : 0;
                     const progressPercent = totalModules > 0 ? (completedModulesCount / totalModules) * 100 : 0;
@@ -366,15 +463,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Load announcements for enrolled courses on Dashboard
-    function loadAnnouncements(enrolledCourseIds) {
+    function loadAnnouncements(enrolledCoursesData) { // enrolledCoursesData is an array of enrollment objects
         const announcementsList = document.getElementById('announcements-list');
         if (!announcementsList) return;
         announcementsList.innerHTML = ''; // Clear old announcements
 
-        if (!enrolledCourseIds || enrolledCourseIds.length === 0) {
+        if (!enrolledCoursesData || enrolledCoursesData.length === 0) {
             announcementsList.innerHTML = '<li>No announcements for your courses.</li>';
             return;
         }
+
+        // Extract courseIds from the enrollment data
+        const enrolledCourseIds = enrolledCoursesData.map(enrollment => enrollment.courseId);
 
         const announcementsDbRef = query(ref(db, 'announcements'), orderByChild('timestamp'));
         onValue(announcementsDbRef, (snapshot) => {
@@ -386,10 +486,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 announcementKeys.forEach(key => {
                     const announcement = allAnnouncements[key];
+                    // Check if the announcement's courseId is in the user's list of enrolled courseIds
                     if (enrolledCourseIds.includes(announcement.courseId)) {
                         const listItem = document.createElement('li');
+                        // Optionally, find the course title from enrolledCoursesData for better display
+                        const enrolledCourseInfo = enrolledCoursesData.find(ec => ec.courseId === announcement.courseId);
+                        const courseTitle = enrolledCourseInfo ? enrolledCourseInfo.title : `Course ID: ${announcement.courseId}`;
+
                         listItem.innerHTML = `
-                            <strong>${new Date(announcement.timestamp).toLocaleDateString()} - Course ID: ${announcement.courseId}</strong>:
+                            <strong>${new Date(announcement.timestamp).toLocaleDateString()} - ${courseTitle}</strong>:
                             ${announcement.message}
                         `;
                         announcementsList.appendChild(listItem);
@@ -467,6 +572,10 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 modulesListEl.innerHTML = '<p>No modules available for this course.</p>';
             }
+
+            // Load assessments
+            await loadCourseAssessments(courseId, userId);
+
         } catch (error) {
             console.error("Error loading course details:", error);
             mainContent.innerHTML = '<p>Error loading course details.</p>';
@@ -478,6 +587,76 @@ document.addEventListener('DOMContentLoaded', () => {
             uploadBtn.addEventListener('click', () => {
                 alert('Assignment upload simulation: This feature is not fully implemented.');
             });
+        }
+    }
+
+    // Add this function to load exams and assignments
+    async function loadCourseAssessments(courseId, userId) {
+        const examsListEl = document.getElementById('exams-list');
+        const assignmentsListEl = document.getElementById('assignments-list');
+
+        if (!examsListEl || !assignmentsListEl) {
+            console.warn("Assessment list elements not found on this page.");
+            return;
+        }
+
+        try {
+            // Load exams data
+            const examsSnapshot = await get(ref(db, `courses/${courseId}/exams`));
+            const exams = examsSnapshot.val();
+
+            examsListEl.innerHTML = ''; // Clear previous
+            if (exams) {
+                const examsHeader = document.createElement('h3');
+                examsHeader.textContent = 'Exams';
+                examsListEl.appendChild(examsHeader);
+                Object.keys(exams).forEach(examId => {
+                    const exam = exams[examId];
+                    const examItem = document.createElement('div');
+                    examItem.classList.add('assessment-item');
+                    examItem.innerHTML = `
+                        <h4>${exam.title}</h4>
+                        <p><strong>Date:</strong> ${new Date(exam.date).toLocaleDateString()}</p>
+                        <p><strong>Duration:</strong> ${exam.duration} minutes</p>
+                        <p><strong>Weight:</strong> ${exam.weight}% of final grade</p>
+                        <button class="btn exam-btn" data-exam-id="${examId}">View Exam Details</button>
+                    `;
+                    examsListEl.appendChild(examItem);
+                });
+            } else {
+                examsListEl.innerHTML = '<h3>Exams</h3><p>No exams scheduled for this course.</p>';
+            }
+
+            // Load assignments
+            const assignmentsSnapshot = await get(ref(db, `courses/${courseId}/assignments`));
+            const assignments = assignmentsSnapshot.val();
+
+            assignmentsListEl.innerHTML = ''; // Clear previous
+            if (assignments) {
+                const assignmentsHeader = document.createElement('h3');
+                assignmentsHeader.textContent = 'Assignments';
+                assignmentsListEl.appendChild(assignmentsHeader);
+                Object.keys(assignments).forEach(assignmentId => {
+                    const assignment = assignments[assignmentId];
+                    const assignmentItem = document.createElement('div');
+                    assignmentItem.classList.add('assessment-item');
+                    assignmentItem.innerHTML = `
+                        <h4>${assignment.title}</h4>
+                        <p><strong>Due:</strong> ${new Date(assignment.dueDate).toLocaleDateString()}</p>
+                        <p><strong>Status:</strong> ${assignment.status || 'Not submitted'}</p>
+                        <button class="btn assignment-btn" data-assignment-id="${assignmentId}">
+                            ${assignment.submitted ? 'View Submission' : 'Submit Assignment'}
+                        </button>
+                    `;
+                    assignmentsListEl.appendChild(assignmentItem);
+                });
+            } else {
+                assignmentsListEl.innerHTML = '<h3>Assignments</h3><p>No assignments for this course yet.</p>';
+            }
+        } catch (error) {
+            console.error("Error loading assessments:", error);
+            if(examsListEl) examsListEl.innerHTML = '<h3>Exams</h3><p>Error loading exams.</p>';
+            if(assignmentsListEl) assignmentsListEl.innerHTML = '<h3>Assignments</h3><p>Error loading assignments.</p>';
         }
     }
 

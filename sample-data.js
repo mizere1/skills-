@@ -27,35 +27,96 @@ async function addSampleCourses() {
 
     const coursesData = {
         "course101": {
-            "title": "Introduction to Web Development",
-            "description": "Learn the fundamentals of HTML, CSS, and JavaScript to build modern websites. This course covers everything from basic syntax to responsive design principles.",
+            "title": "Introduction to Computer Science and Programming",
+            "description": "This course is designed to introduce students to the fundamentals of computer science and programming. It covers basic concepts like variables, control structures, data structures, and algorithms, using Python as the primary language.",
+            "instructor": "Prof. John Guttag",
+            "department": "Electrical Engineering and Computer Science",
+            "level": "Undergraduate",
+            "term": "Fall 2023",
+            "credits": 12,
             "modules": [
-                { "moduleId": "m1", "title": "Module 1: HTML Basics", "content": "Understanding tags, elements, and page structure." },
-                { "moduleId": "m2", "title": "Module 2: CSS Fundamentals", "content": "Styling web pages, selectors, and the box model." },
-                { "moduleId": "m3", "title": "Module 3: JavaScript Essentials", "content": "Variables, functions, DOM manipulation, and events." },
-                { "moduleId": "m4", "title": "Module 4: Responsive Design", "content": "Media queries and flexible layouts." }
-            ]
+                { "moduleId": "m1", "title": "Introduction and Python Basics", "content": "Overview of computation, Python programs, variables, expressions, and statements." },
+                { "moduleId": "m2", "title": "Branching and Iteration", "content": "Conditionals, loops, and iteration in Python." },
+                { "moduleId": "m3", "title": "Data Structures", "content": "Strings, lists, tuples, and dictionaries in Python." },
+                { "moduleId": "m4", "title": "Functions and Recursion", "content": "Defining and using functions, recursion, and scope." }
+            ],
+            "exams": {
+                "exam1": {
+                    "title": "Midterm Exam",
+                    "date": Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days from now
+                    "duration": 90,
+                    "weight": 30,
+                    "topics": "Modules 1-3"
+                },
+                "exam2": {
+                    "title": "Final Exam",
+                    "date": Date.now() + (90 * 24 * 60 * 60 * 1000), // 90 days from now
+                    "duration": 180,
+                    "weight": 40,
+                    "topics": "All modules"
+                }
+            },
+            "assignments": {
+                "assign1": {
+                    "title": "Problem Set 1",
+                    "dueDate": Date.now() + (7 * 24 * 60 * 60 * 1000), // 7 days from now
+                    "weight": 10,
+                    "description": "Basic Python programming exercises"
+                },
+                "assign2": {
+                    "title": "Problem Set 2",
+                    "dueDate": Date.now() + (14 * 24 * 60 * 60 * 1000), // 14 days from now
+                    "weight": 10,
+                    "description": "Data structures and algorithms"
+                }
+            }
         },
         "course202": {
-            "title": "Advanced JavaScript",
-            "description": "Dive deeper into JavaScript concepts like closures, promises, async/await, and modern ES6+ features. Explore functional programming and performance optimization.",
+            "title": "Algorithms and Data Structures",
+            "description": "A comprehensive study of algorithms and data structures, focusing on efficiency and practical applications. Topics include sorting, searching, graph algorithms, and dynamic programming.",
+            "instructor": "Prof. Erik Demaine",
+            "department": "Electrical Engineering and Computer Science",
+            "level": "Undergraduate",
+            "term": "Spring 2024",
+            "credits": 12,
             "modules": [
-                { "moduleId": "m1", "title": "Module 1: ES6+ Features", "content": "Arrow functions, destructuring, classes, modules." },
-                { "moduleId": "m2", "title": "Module 2: Asynchronous JavaScript", "content": "Callbacks, Promises, async/await." },
-                { "moduleId": "m3", "title": "Module 3: Functional Programming", "content": "Immutability, pure functions, higher-order functions." },
-                { "moduleId": "m4", "title": "Module 4: JavaScript Tooling", "content": "Linters, bundlers, and debuggers." }
-            ]
-        },
-        "course303": {
-            "title": "Data Structures and Algorithms",
-            "description": "Understand common data structures like arrays, linked lists, trees, and graphs. Learn algorithmic techniques for problem-solving.",
-            "modules": [
-                { "moduleId": "m1", "title": "Module 1: Introduction to Algorithms", "content": "Big O notation, time and space complexity." },
-                { "moduleId": "m2", "title": "Module 2: Basic Data Structures", "content": "Arrays, Stacks, Queues, Linked Lists." },
-                { "moduleId": "m3", "title": "Module 3: Trees and Graphs", "content": "Binary trees, heaps, graph traversal." },
-                { "moduleId": "m4", "title": "Module 4: Sorting and Searching", "content": "Bubble sort, merge sort, binary search." }
-            ]
+                { "moduleId": "m1", "title": "Analysis of Algorithms", "content": "Asymptotic notation, recurrences, and master theorem." },
+                { "moduleId": "m2", "title": "Sorting and Searching", "content": "Merge sort, quicksort, heapsort, binary search trees." },
+                { "moduleId": "m3", "title": "Graph Algorithms", "content": "BFS, DFS, shortest paths, minimum spanning trees." },
+                { "moduleId": "m4", "title": "Dynamic Programming", "content": "Principles of dynamic programming, common problems." }
+            ],
+            "exams": {
+                "exam1": {
+                    "title": "Quiz 1",
+                    "date": Date.now() + (25 * 24 * 60 * 60 * 1000),
+                    "duration": 60,
+                    "weight": 25,
+                    "topics": "Modules 1-2"
+                },
+                "exam2": {
+                    "title": "Quiz 2",
+                    "date": Date.now() + (70 * 24 * 60 * 60 * 1000),
+                    "duration": 60,
+                    "weight": 25,
+                    "topics": "Modules 3-4"
+                }
+            },
+            "assignments": {
+                "assign1": {
+                    "title": "Implementation Assignment 1",
+                    "dueDate": Date.now() + (20 * 24 * 60 * 60 * 1000),
+                    "weight": 25,
+                    "description": "Implement sorting algorithms."
+                },
+                 "assign2": {
+                    "title": "Graph Problems",
+                    "dueDate": Date.now() + (50 * 24 * 60 * 60 * 1000),
+                    "weight": 25,
+                    "description": "Solve graph theory problems."
+                }
+            }
         }
+        // Add more MIT-like courses...
     };
 
     try {
