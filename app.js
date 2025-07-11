@@ -26,9 +26,12 @@ import {
     getDownloadURL
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-storage.js";
 
+// Import functions to populate sample data
+import { addSampleCourses, addSampleAnnouncements } from './sample-data.js';
+
 
 // Wait for the DOM to be fully loaded before running scripts
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => { // Made async for await ensureSampleData
     if (!auth || !db) {
         console.error("Firebase auth or db service not available. Check firebase-config.js.");
         // Display a message to the user on the page if Firebase is not configured.
@@ -992,5 +995,28 @@ document.addEventListener('DOMContentLoaded', () => {
     // `enrolledCourseObjects.some(ec => ec.courseId === courseId)` if `enrolledCourseObjects` is the array of enrollment objects.
     // This change is done in the `loadAllCourses` function.
     // The `enrollInCourse` function was also updated to correctly check if already enrolled based on the new object structure.
+
+    // Function to check and populate sample data if DB is empty
+    async function ensureSampleDataIsPopulated() {
+        try {
+            const coursesSnapshot = await get(ref(db, 'courses'));
+            if (!coursesSnapshot.exists() || !coursesSnapshot.val()) {
+                console.info("No existing course data found. Populating sample data...");
+                await addSampleCourses();
+                await addSampleAnnouncements(); // Also populate announcements if courses are populated
+                console.info("Sample data automatically populated.");
+            } else {
+                console.info("Sample data check: Course data already exists.");
+            }
+        } catch (error) {
+            console.error("Error during sample data check/population:", error);
+        }
+    }
+
+    // Call this once after Firebase services are confirmed and DOM is loaded.
+    // This ensures it runs only once per page load after everything is set up.
+    if (auth && db) { // Ensure Firebase services are available before trying
+        await ensureSampleDataIsPopulated();
+    }
 
 }); // End DOMContentLoaded

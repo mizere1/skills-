@@ -125,65 +125,55 @@ async function addSampleCourses() {
 
     try {
         await set(ref(db, 'courses'), coursesData);
-        console.log("Sample courses added successfully!");
-        alert("Sample courses added to your Realtime Database!");
+        console.info("Sample courses data populated in Firebase."); // Changed to console.info
     } catch (error) {
         console.error("Error adding sample courses: ", error);
-        alert("Error adding sample courses: " + error.message);
+        // No alert for automatic loading
     }
 }
 
 async function addSampleAnnouncements() {
     if (!db) {
-        console.error("Firebase Realtime Database (db) is not available. Check firebase-config.js and ensure it's loaded.");
-        alert("Firebase (db) is not initialized. Cannot add sample data.");
+        console.error("Firebase Realtime Database (db) is not available for sample announcements. Check firebase-config.js.");
+        // No alert for automatic loading
         return;
     }
 
     const announcementsData = {
         "announcement1": {
             "courseId": "course101",
-            "message": "Welcome to Introduction to Web Development! The first lecture will be on Monday at 10 AM.",
+            "message": "Welcome to Introduction to Computer Science and Programming! The first lecture will be on Monday at 10 AM.",
             "timestamp": Date.now() - (3 * 24 * 60 * 60 * 1000) // 3 days ago
         },
         "announcement2": {
             "courseId": "course202",
-            "message": "Office hours for Advanced JavaScript will be held every Wednesday from 2 PM to 3 PM.",
+            "message": "Office hours for Algorithms and Data Structures will be held every Wednesday from 2 PM to 3 PM.",
             "timestamp": Date.now() - (2 * 24 * 60 * 60 * 1000) // 2 days ago
         },
         "announcement3": {
             "courseId": "course101",
-            "message": "Module 1 (HTML Basics) assignments are due next Friday. Please submit via the portal.",
+            "message": "Problem Set 1 for Intro to CS is due next Friday. Please submit via the portal.",
             "timestamp": Date.now() - (1 * 24 * 60 * 60 * 1000) // 1 day ago
         }
     };
 
     try {
         await set(ref(db, 'announcements'), announcementsData);
-        console.log("Sample announcements added successfully!");
-        alert("Sample announcements added to your Realtime Database!");
+        console.info("Sample announcements data populated in Firebase."); // Changed to console.info
     } catch (error) {
         console.error("Error adding sample announcements: ", error);
-        alert("Error adding sample announcements: " + error.message);
+        // No alert for automatic loading
     }
 }
 
-// To make functions available globally for console access after module loading:
-// Ensure this script is loaded as a module in your HTML: <script type="module" src="sample-data.js"></script>
-// Then, in this script, you can expose them like this:
-window.addSampleCourses = addSampleCourses;
-window.addSampleAnnouncements = addSampleAnnouncements;
+// Export functions for app.js to import
+export { addSampleCourses, addSampleAnnouncements };
 
-// Instructions for user:
-// 1. Make sure Firebase is initialized (app.js should handle this via firebase-config.js).
-// 2. Log in to your application.
-// 3. Open browser developer console.
-// 4. Type `addSampleCourses()` and press Enter.
-// 5. Type `addSampleAnnouncements()` and press Enter.
-// This file (`sample-data.js`) must be included as a module in one of the HTML pages
-// temporarily, or you can copy-paste these functions into the console directly
-// (after ensuring `firebase-config.js` has run and `db` is available).
-// Example for temporary inclusion in index.html:
-// <script type="module" src="firebase-config.js"></script>
-// <script type="module" src="app.js"></script>
-// <script type="module" src="sample-data.js"></script> <!-- Add this line temporarily -->
+
+// Kept for optional manual invocation via console if this script is loaded in HTML:
+// To use this, you might open your website in the browser,
+// open the developer console, and type (after ensuring this script is loaded as a module):
+// import('./sample-data.js').then(module => { module.addSampleCourses(); module.addSampleAnnouncements(); });
+// Or, if temporarily including this script directly in HTML for console use and not as module for app.js:
+// window.addSampleCourses = addSampleCourses;
+// window.addSampleAnnouncements = addSampleAnnouncements;
