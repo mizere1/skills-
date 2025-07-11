@@ -322,28 +322,43 @@ document.addEventListener('DOMContentLoaded', async () => { // Made async for aw
     }
 
     // --- USER DATA HANDLING ---
+
+    function clearProfilePageData() {
+        const profileFieldsIds = [
+            'user-name', 'user-email', 'user-role', 'user-dob', 'user-gender',
+            'user-phone', 'user-address-street', 'user-address-city', 'user-address-state',
+            'user-address-zip', 'user-address-country', 'user-prev-education',
+            'user-degree', 'user-major', 'user-minor', 'user-emergency-name',
+            'user-emergency-relationship', 'user-emergency-phone', 'user-terms-accepted'
+        ];
+        profileFieldsIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = 'N/A';
+        });
+        const profilePicEl = document.getElementById('profile-picture');
+        if (profilePicEl) profilePicEl.src = 'https://via.placeholder.com/150';
+
+        const transcriptsLink = document.getElementById('user-transcripts-link');
+        const transcriptsNA = document.getElementById('user-transcripts-na');
+        if (transcriptsLink) transcriptsLink.classList.add('hidden');
+        if (transcriptsNA) {
+            transcriptsNA.classList.remove('hidden');
+            transcriptsNA.textContent = 'N/A';
+        }
+    }
+
     function loadUserData(user) {
         const userDbRef = ref(db, 'users/' + user.uid);
         onValue(userDbRef, (snapshot) => {
             const userData = snapshot.val();
+            const adminNavLink = document.getElementById('admin-nav-link'); // Get admin link once
+
             if (userData) {
-                // General elements present on multiple pages or profile page
-                const userNameEl = document.getElementById('user-name');
-                const userEmailEl = document.getElementById('user-email');
-                const userRoleEl = document.getElementById('user-role'); // This is the one on profile.html
-                const adminNavLink = document.getElementById('admin-nav-link');
-
-
+                // Populate general user info (potentially for nav header or common areas)
+                const userNameEl = document.getElementById('user-name'); // Could be in nav or profile
+                const userEmailEl = document.getElementById('user-email'); // Could be in nav or profile
                 if (userNameEl) userNameEl.textContent = userData.displayName || 'N/A';
                 if (userEmailEl) userEmailEl.textContent = userData.email || 'N/A';
-
-                // Explicitly populate role on profile page if the element exists
-                if (userRoleEl && window.location.pathname.endsWith('profile.html')) {
-                    userRoleEl.textContent = userData.role || 'N/A';
-                } else if (userRoleEl) { // If it's not profile page but element exists (e.g. placeholder in nav)
-                    userRoleEl.textContent = userData.role || 'N/A'; // Or handle differently if needed
-                }
-
 
                 // Show/Hide Admin Nav Link based on role
                 if (adminNavLink) {
