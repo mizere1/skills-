@@ -167,7 +167,53 @@ async function addSampleAnnouncements() {
 }
 
 // Export functions for app.js to import
-export { addSampleCourses, addSampleAnnouncements };
+export { addSampleCourses, addSampleAnnouncements, addSampleAcademicTerms };
+
+
+// Function to add sample academic terms
+async function addSampleAcademicTerms() {
+    if (!db) {
+        console.error("Firebase Realtime Database (db) is not available for sample academic terms. Check firebase-config.js.");
+        return;
+    }
+
+    const sampleTermsData = {
+        "termFall23": {
+            name: "Fall 2023",
+            year: 2023,
+            type: "Fall",
+            startDate: "2023-08-21",
+            endDate: "2023-12-15",
+            createdBy: "system_init",
+            createdAt: Date.now() - (100 * 24 * 60 * 60 * 1000) // Approx 100 days ago
+        },
+        "termSpring24": {
+            name: "Spring 2024",
+            year: 2024,
+            type: "Spring",
+            startDate: "2024-01-15",
+            endDate: "2024-05-10",
+            createdBy: "system_init",
+            createdAt: Date.now() - (10 * 24 * 60 * 60 * 1000) // Approx 10 days ago
+        },
+        "termSummer24": {
+            name: "Summer 2024",
+            year: 2024,
+            type: "Summer",
+            startDate: "2024-06-03",
+            endDate: "2024-08-02",
+            createdBy: "system_init",
+            createdAt: Date.now()
+        }
+    };
+
+    try {
+        await set(ref(db, 'academicTerms'), sampleTermsData);
+        console.info("Sample academic terms data populated in Firebase.");
+    } catch (error) {
+        console.error("Error adding sample academic terms: ", error);
+    }
+}
 
 
 // Kept for optional manual invocation via console if this script is loaded in HTML:
