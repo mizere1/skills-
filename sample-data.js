@@ -1,28 +1,31 @@
+// Import db from firebase-config.js and necessary Firebase functions
+import { db } from './firebase-config.js';
+import { ref, set } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
 /*
 This script can be used to populate your Firebase Realtime Database with sample data.
-You can run this in a browser console where your Firebase app is initialized,
-or adapt it to run with Node.js using the Firebase Admin SDK.
-
-Make sure your Firebase app is initialized and `db` (firebase.database()) is available
-before running these functions.
+You can run this in a browser console where your Firebase app is initialized.
+Make sure firebase-config.js and app.js (which initializes Firebase through config) are loaded as modules.
 
 Example usage in browser console after logging in to your app:
+To make functions available globally for console access after module loading:
+window.addSampleCourses = addSampleCourses;
+window.addSampleAnnouncements = addSampleAnnouncements;
+
+Then call:
 addSampleCourses();
 addSampleAnnouncements();
 */
 
-// Ensure Firebase is initialized and db is available
-// const db = firebase.database(); // This should already be defined if running in your app's context
 
-function addSampleCourses() {
-    if (typeof firebase === 'undefined' || !firebase.database) {
-        console.error("Firebase Realtime Database is not initialized. Make sure firebase-config.js is correct and Firebase is loaded.");
-        alert("Firebase is not initialized. Cannot add sample data.");
+async function addSampleCourses() {
+    if (!db) {
+        console.error("Firebase Realtime Database (db) is not available. Check firebase-config.js and ensure it's loaded.");
+        alert("Firebase (db) is not initialized. Cannot add sample data.");
         return;
     }
-    const db = firebase.database();
 
-    const courses = {
+    const coursesData = {
         "course101": {
             "title": "Introduction to Web Development",
             "description": "Learn the fundamentals of HTML, CSS, and JavaScript to build modern websites. This course covers everything from basic syntax to responsive design principles.",
@@ -55,26 +58,24 @@ function addSampleCourses() {
         }
     };
 
-    db.ref('courses').set(courses)
-        .then(() => {
-            console.log("Sample courses added successfully!");
-            alert("Sample courses added to your Realtime Database!");
-        })
-        .catch((error) => {
-            console.error("Error adding sample courses: ", error);
-            alert("Error adding sample courses: " + error.message);
-        });
+    try {
+        await set(ref(db, 'courses'), coursesData);
+        console.log("Sample courses added successfully!");
+        alert("Sample courses added to your Realtime Database!");
+    } catch (error) {
+        console.error("Error adding sample courses: ", error);
+        alert("Error adding sample courses: " + error.message);
+    }
 }
 
-function addSampleAnnouncements() {
-     if (typeof firebase === 'undefined' || !firebase.database) {
-        console.error("Firebase Realtime Database is not initialized. Make sure firebase-config.js is correct and Firebase is loaded.");
-        alert("Firebase is not initialized. Cannot add sample data.");
+async function addSampleAnnouncements() {
+    if (!db) {
+        console.error("Firebase Realtime Database (db) is not available. Check firebase-config.js and ensure it's loaded.");
+        alert("Firebase (db) is not initialized. Cannot add sample data.");
         return;
     }
-    const db = firebase.database();
 
-    const announcements = {
+    const announcementsData = {
         "announcement1": {
             "courseId": "course101",
             "message": "Welcome to Introduction to Web Development! The first lecture will be on Monday at 10 AM.",
@@ -92,25 +93,32 @@ function addSampleAnnouncements() {
         }
     };
 
-    db.ref('announcements').set(announcements)
-        .then(() => {
-            console.log("Sample announcements added successfully!");
-            alert("Sample announcements added to your Realtime Database!");
-        })
-        .catch((error) => {
-            console.error("Error adding sample announcements: ", error);
-            alert("Error adding sample announcements: " + error.message);
-        });
+    try {
+        await set(ref(db, 'announcements'), announcementsData);
+        console.log("Sample announcements added successfully!");
+        alert("Sample announcements added to your Realtime Database!");
+    } catch (error) {
+        console.error("Error adding sample announcements: ", error);
+        alert("Error adding sample announcements: " + error.message);
+    }
 }
 
-// To use this, you might open your website in the browser,
-// open the developer console, and type:
-// addSampleCourses();
-// addSampleAnnouncements();
-// Make sure you are logged in or Firebase is configured to allow writes.
-// Alternatively, include this file in your HTML and call these functions based on a button click, for example.
-// e.g., in one of your HTML files, temporarily add:
-// <script src="sample-data.js"></script>
-// <button onclick="addSampleCourses()">Add Sample Courses</button>
-// <button onclick="addSampleAnnouncements()">Add Sample Announcements</button>
-// Remember to remove these temporary buttons after populating data.
+// To make functions available globally for console access after module loading:
+// Ensure this script is loaded as a module in your HTML: <script type="module" src="sample-data.js"></script>
+// Then, in this script, you can expose them like this:
+window.addSampleCourses = addSampleCourses;
+window.addSampleAnnouncements = addSampleAnnouncements;
+
+// Instructions for user:
+// 1. Make sure Firebase is initialized (app.js should handle this via firebase-config.js).
+// 2. Log in to your application.
+// 3. Open browser developer console.
+// 4. Type `addSampleCourses()` and press Enter.
+// 5. Type `addSampleAnnouncements()` and press Enter.
+// This file (`sample-data.js`) must be included as a module in one of the HTML pages
+// temporarily, or you can copy-paste these functions into the console directly
+// (after ensuring `firebase-config.js` has run and `db` is available).
+// Example for temporary inclusion in index.html:
+// <script type="module" src="firebase-config.js"></script>
+// <script type="module" src="app.js"></script>
+// <script type="module" src="sample-data.js"></script> <!-- Add this line temporarily -->

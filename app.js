@@ -1,14 +1,35 @@
+// Import Firebase services from firebase-config.js
+import { auth, db } from './firebase-config.js';
+
+// Import Firebase functions
+import {
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    signOut,
+    onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-auth.js";
+import {
+    ref,
+    set,
+    get,
+    child,
+    onValue,
+    update,
+    push, // Though not used in current enroll, good to have if we change to push keys
+    orderByChild, // For querying announcements
+    query // For querying announcements
+} from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
+
+
 // Wait for the DOM to be fully loaded before running scripts
 document.addEventListener('DOMContentLoaded', () => {
-    // Firebase App Initialization Check
-    // The user needs to add their Firebase config to firebase-config.js
-    if (typeof firebase === 'undefined' || typeof firebase.app === 'undefined') {
-        console.error("Firebase SDK not loaded or initialized. Make sure firebase-config.js is set up correctly.");
+    if (!auth || !db) {
+        console.error("Firebase auth or db service not available. Check firebase-config.js.");
         // Display a message to the user on the page if Firebase is not configured.
         const mainContent = document.querySelector('main');
         if (mainContent) {
             const errorDiv = document.createElement('div');
-            errorDiv.textContent = 'Error: Firebase is not configured. Please set up firebase-config.js.';
+            errorDiv.textContent = 'Error: Firebase services are not configured correctly. Please check firebase-config.js.';
             errorDiv.style.color = 'red';
             errorDiv.style.textAlign = 'center';
             errorDiv.style.padding = '20px';
@@ -22,9 +43,6 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         return; // Stop script execution if Firebase is not ready
     }
-
-    const auth = firebase.auth();
-    const db = firebase.database(); // Using Realtime Database
 
     // DOM Elements
     const loginForm = document.getElementById('login-form');
@@ -51,29 +69,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = document.getElementById('signup-email').value;
             const password = document.getElementById('signup-password').value;
 
-            auth.createUserWithEmailAndPassword(email, password)
+            createUserWithEmailAndPassword(auth, email, password)
                 .then(userCredential => {
                     const user = userCredential.user;
                     // Store additional user info in Realtime Database
-                    db.ref('users/' + user.uid).set({
+                    const userRef = ref(db, 'users/' + user.uid);
+                    set(userRef, {
                         displayName: name,
                         email: email,
                         role: 'student',
-                        enrolledCourses: [],
-                        progress: {}
+                        enrolledCourses: [], // Initialize as empty array or null for Firebase
+                        progress: {} // Initialize as empty object or null
                     }).then(() => {
                         console.log('User signed up and data stored:', user.uid);
                         signupForm.reset();
                         if(authError) authError.textContent = '';
-                        // User will be redirected by onAuthStateChanged
-                    }).catch(error => {
-                        console.error('Error storing user data:', error);
-                         if(authError) authError.textContent = `Error storing user data: ${error.message}`;
+                        // User will be managed by onAuthStateChanged
+                    }).catch(dbError => {
+                        console.error('Error storing user data:', dbError);
+                         if(authError) authError.textContent = `Error storing user data: ${dbError.message}`;
                     });
                 })
-                .catch(error => {
-                    console.error('Signup error:', error);
-                    if(authError) authError.textContent = `Signup Error: ${error.message}`;
+                .catch(authErrorFull => {
+                    console.error('Signup error:', authErrorFull);
+                    if(authError) authError.textContent = `Signup Error: ${authErrorFull.message}`;
                 });
         });
     }
@@ -85,12 +104,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
 
-            auth.signInWithEmailAndPassword(email, password)
+            signInWithEmailAndPassword(auth, email, password)
                 .then(userCredential => {
                     console.log('User logged in:', userCredential.user.uid);
                     loginForm.reset();
                     if(authError) authError.textContent = '';
-                    // User will be redirected by onAuthStateChanged
+                    // User will be managed by onAuthStateChanged
                 })
                 .catch(error => {
                     console.error('Login error:', error);
@@ -101,9 +120,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Logout
     function handleLogout() {
-        auth.signOut().then(() => {
+        signOut(auth).then(() => {
             console.log('User logged out');
-            window.location.href = 'index.html'; // Redirect to home page after logout
+            // onAuthStateChanged will handle UI updates and redirection
+            window.location.href = 'index.html';
         }).catch(error => {
             console.error('Logout error:', error);
         });
@@ -114,7 +134,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Auth state listener
-    auth.onAuthStateChanged(user => {
+    onAuthStateChanged(auth, user => {
         if (user) {
             // User is signed in.
             console.log('User is signed in:', user.uid);
@@ -196,8 +216,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- USER DATA HANDLING ---
     function loadUserData(user) {
-        const userRef = db.ref('users/' + user.uid);
-        userRef.on('value', (snapshot) => {
+        const userDbRef = ref(db, 'users/' + user.uid);
+        onValue(userDbRef, (snapshot) => {
             const userData = snapshot.val();
             if (userData) {
                 // Populate profile page
@@ -211,6 +231,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     loadAnnouncements(userData.enrolledCourses || []);
                 }
             }
+        }, (error) => {
+            console.error("Error loading user data:", error);
         });
 
         // If on course detail page, load its details
@@ -228,68 +250,68 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- COURSE & PORTAL FUNCTIONALITY ---
 
     // Load all available courses on the Home Page
-    function loadAllCourses(currentUserId) {
-        const coursesRef = db.ref('courses');
+    async function loadAllCourses(currentUserId) {
+        const coursesDbRef = ref(db, 'courses');
         const coursesContainer = document.getElementById('courses-container');
         if (!coursesContainer) return;
 
-        coursesRef.on('value', (snapshot) => {
+        try {
+            const coursesSnapshot = await get(coursesDbRef);
             coursesContainer.innerHTML = ''; // Clear existing courses
-            const courses = snapshot.val();
+            const courses = coursesSnapshot.val();
+
             if (courses) {
-                // Get user's enrolled courses to disable enroll button if already enrolled
-                db.ref('users/' + currentUserId + '/enrolledCourses').once('value', (enrolledSnapshot) => {
-                    const enrolledCourseIds = enrolledSnapshot.val() || [];
-                    for (const courseId in courses) {
-                        const course = courses[courseId];
-                        const courseCard = document.createElement('div');
-                        courseCard.classList.add('course-card');
-                        courseCard.innerHTML = `
-                            <h3>${course.title}</h3>
-                            <p>${course.description}</p>
-                            <button class="btn enroll-btn" data-course-id="${courseId}" ${enrolledCourseIds.includes(courseId) ? 'disabled' : ''}>
-                                ${enrolledCourseIds.includes(courseId) ? 'Enrolled' : 'Enroll'}
-                            </button>
-                        `;
-                        coursesContainer.appendChild(courseCard);
-                    }
-                    // Add event listeners to new enroll buttons
-                    document.querySelectorAll('.enroll-btn').forEach(button => {
-                        button.addEventListener('click', () => enrollInCourse(currentUserId, button.dataset.courseId, button));
-                    });
+                const userEnrolledCoursesRef = ref(db, 'users/' + currentUserId + '/enrolledCourses');
+                const enrolledSnapshot = await get(userEnrolledCoursesRef);
+                const enrolledCourseIds = enrolledSnapshot.val() || [];
+
+                for (const courseId in courses) {
+                    const course = courses[courseId];
+                    const courseCard = document.createElement('div');
+                    courseCard.classList.add('course-card');
+                    courseCard.innerHTML = `
+                        <h3>${course.title}</h3>
+                        <p>${course.description}</p>
+                        <button class="btn enroll-btn" data-course-id="${courseId}" ${enrolledCourseIds.includes(courseId) ? 'disabled' : ''}>
+                            ${enrolledCourseIds.includes(courseId) ? 'Enrolled' : 'Enroll'}
+                        </button>
+                    `;
+                    coursesContainer.appendChild(courseCard);
+                }
+                // Add event listeners to new enroll buttons
+                document.querySelectorAll('.enroll-btn').forEach(button => {
+                    button.addEventListener('click', () => enrollInCourse(currentUserId, button.dataset.courseId, button));
                 });
             } else {
                 coursesContainer.innerHTML = '<p>No courses available at the moment.</p>';
             }
-        }, (error) => {
+        } catch (error) {
             console.error("Error loading courses:", error);
             coursesContainer.innerHTML = '<p>Error loading courses. Please try again later.</p>';
-        });
+        }
     }
 
     // Enroll user in a course
-    function enrollInCourse(userId, courseId, button) {
-        const userCoursesRef = db.ref('users/' + userId + '/enrolledCourses');
-        userCoursesRef.once('value', (snapshot) => {
+    async function enrollInCourse(userId, courseId, button) {
+        const userCoursesDbRef = ref(db, 'users/' + userId + '/enrolledCourses');
+        try {
+            const snapshot = await get(userCoursesDbRef);
             let enrolledCourses = snapshot.val() || [];
+            if (!Array.isArray(enrolledCourses)) enrolledCourses = []; // Ensure it's an array
+
             if (!enrolledCourses.includes(courseId)) {
                 enrolledCourses.push(courseId);
-                userCoursesRef.set(enrolledCourses)
-                    .then(() => {
-                        console.log(`User ${userId} enrolled in course ${courseId}`);
-                        alert(`Successfully enrolled in course!`);
-                        if (button) {
-                            button.textContent = 'Enrolled';
-                            button.disabled = true;
-                        }
-                        // Initialize progress for this course (0 modules completed)
-                        const userProgressRef = db.ref(`users/${userId}/progress/${courseId}`);
-                        userProgressRef.set({ completedModules: [] }); // Store completed modules as an array
-                    })
-                    .catch(error => {
-                        console.error("Error enrolling in course:", error);
-                        alert(`Error enrolling: ${error.message}`);
-                    });
+                await set(userCoursesDbRef, enrolledCourses);
+
+                console.log(`User ${userId} enrolled in course ${courseId}`);
+                alert(`Successfully enrolled in course!`);
+                if (button) {
+                    button.textContent = 'Enrolled';
+                    button.disabled = true;
+                }
+                // Initialize progress for this course
+                const userProgressDbRef = ref(db, `users/${userId}/progress/${courseId}`);
+                await set(userProgressDbRef, { completedModules: [] }); // Store completed modules as an array
             } else {
                 alert('You are already enrolled in this course.');
                 if (button) {
@@ -297,11 +319,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     button.disabled = true;
                 }
             }
-        });
+        } catch (error) {
+            console.error("Error enrolling in course:", error);
+            alert(`Error enrolling: ${error.message}`);
+        }
     }
 
     // Load enrolled courses on the Dashboard
-    function loadEnrolledCourses(userId, enrolledCourseIds, userProgress) {
+    async function loadEnrolledCourses(userId, enrolledCourseIds, userProgress) {
         const enrolledCoursesList = document.getElementById('enrolled-courses-list');
         if (!enrolledCoursesList) return;
         enrolledCoursesList.innerHTML = ''; // Clear previous list
@@ -311,12 +336,13 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        enrolledCourseIds.forEach(courseId => {
-            db.ref('courses/' + courseId).once('value', (snapshot) => {
-                const course = snapshot.val();
+        for (const courseId of enrolledCourseIds) {
+            try {
+                const courseSnapshot = await get(ref(db, 'courses/' + courseId));
+                const course = courseSnapshot.val();
                 if (course) {
-                    const courseProgress = userProgress[courseId] || { completedModules: [] };
-                    const completedModulesCount = Array.isArray(courseProgress.completedModules) ? courseProgress.completedModules.length : 0;
+                    const courseProg = userProgress[courseId] || { completedModules: [] };
+                    const completedModulesCount = Array.isArray(courseProg.completedModules) ? courseProg.completedModules.length : 0;
                     const totalModules = course.modules ? course.modules.length : 0;
                     const progressPercent = totalModules > 0 ? (completedModulesCount / totalModules) * 100 : 0;
 
@@ -333,8 +359,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
                     enrolledCoursesList.appendChild(courseCard);
                 }
-            });
-        });
+            } catch (error) {
+                console.error(`Error loading details for enrolled course ${courseId}:`, error);
+            }
+        }
     }
 
     // Load announcements for enrolled courses on Dashboard
@@ -348,13 +376,14 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const announcementsRef = db.ref('announcements').orderByChild('timestamp'); // Order by time
-        announcementsRef.on('value', (snapshot) => {
+        const announcementsDbRef = query(ref(db, 'announcements'), orderByChild('timestamp'));
+        onValue(announcementsDbRef, (snapshot) => {
             const allAnnouncements = snapshot.val();
             let userAnnouncementsFound = false;
+            announcementsList.innerHTML = ''; // Clear before re-populating
             if (allAnnouncements) {
-                // Iterate in reverse to show newest first (since default is ascending)
-                const announcementKeys = Object.keys(allAnnouncements).reverse();
+                const announcementKeys = Object.keys(allAnnouncements).sort((a,b) => allAnnouncements[b].timestamp - allAnnouncements[a].timestamp); // Sort newest first
+
                 announcementKeys.forEach(key => {
                     const announcement = allAnnouncements[key];
                     if (enrolledCourseIds.includes(announcement.courseId)) {
@@ -371,12 +400,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!userAnnouncementsFound) {
                 announcementsList.innerHTML = '<li>No new announcements for your courses.</li>';
             }
+        }, (error) => {
+            console.error("Error loading announcements:", error);
+            announcementsList.innerHTML = '<li>Error loading announcements.</li>';
         });
     }
 
 
     // Load Course Details page
-    function loadCourseDetails(courseId, userId) {
+    async function loadCourseDetails(courseId, userId) {
         const courseTitleEl = document.getElementById('course-title');
         const courseSyllabusEl = document.getElementById('course-syllabus');
         const modulesListEl = document.getElementById('modules-list');
@@ -384,7 +416,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (!courseTitleEl || !courseSyllabusEl || !modulesListEl || !mainContent) return;
 
-        db.ref('courses/' + courseId).once('value', (courseSnapshot) => {
+        try {
+            const courseSnapshot = await get(ref(db, 'courses/' + courseId));
             const course = courseSnapshot.val();
             if (!course) {
                 mainContent.innerHTML = '<p>Course not found.</p>';
@@ -393,51 +426,51 @@ document.addEventListener('DOMContentLoaded', () => {
 
             courseTitleEl.textContent = course.title;
             courseSyllabusEl.textContent = course.description; // Using description as syllabus for simplicity
-
             modulesListEl.innerHTML = ''; // Clear previous modules
 
-            // Get user's progress for this course
-            db.ref(`users/${userId}/progress/${courseId}`).once('value', (progressSnapshot) => {
-                const courseProgress = progressSnapshot.val() || { completedModules: [] };
-                const completedModules = Array.isArray(courseProgress.completedModules) ? courseProgress.completedModules : [];
+            const progressSnapshot = await get(ref(db, `users/${userId}/progress/${courseId}`));
+            const courseProgress = progressSnapshot.val() || { completedModules: [] };
+            const completedModules = Array.isArray(courseProgress.completedModules) ? courseProgress.completedModules : [];
 
-                if (course.modules && course.modules.length > 0) {
-                    course.modules.forEach((module, index) => {
-                        const moduleId = module.moduleId || `module-${index}`; // Ensure moduleId exists
-                        const isCompleted = completedModules.includes(moduleId);
+            if (course.modules && course.modules.length > 0) {
+                course.modules.forEach((module, index) => {
+                    const moduleId = module.moduleId || `module-${index}`; // Ensure moduleId exists
+                    const isCompleted = completedModules.includes(moduleId);
 
-                        const moduleItem = document.createElement('div');
-                        moduleItem.classList.add('module-item');
-                        moduleItem.innerHTML = `
-                            <div>
-                                <h4>${module.title}</h4>
-                                <p>${module.content || 'No content preview.'}</p>
-                            </div>
-                            <div>
-                                <span class="module-status">${isCompleted ? 'Completed' : 'Incomplete'}</span>
-                                <button class="btn btn-secondary mark-complete-btn"
-                                        data-course-id="${courseId}"
-                                        data-module-id="${moduleId}"
-                                        ${isCompleted ? 'disabled' : ''}>
-                                    ${isCompleted ? 'Completed' : 'Mark as Complete'}
-                                </button>
-                            </div>
-                        `;
-                        modulesListEl.appendChild(moduleItem);
+                    const moduleItem = document.createElement('div');
+                    moduleItem.classList.add('module-item');
+                    moduleItem.innerHTML = `
+                        <div>
+                            <h4>${module.title}</h4>
+                            <p>${module.content || 'No content preview.'}</p>
+                        </div>
+                        <div>
+                            <span class="module-status">${isCompleted ? 'Completed' : 'Incomplete'}</span>
+                            <button class="btn btn-secondary mark-complete-btn"
+                                    data-course-id="${courseId}"
+                                    data-module-id="${moduleId}"
+                                    ${isCompleted ? 'disabled' : ''}>
+                                ${isCompleted ? 'Completed' : 'Mark as Complete'}
+                            </button>
+                        </div>
+                    `;
+                    modulesListEl.appendChild(moduleItem);
+                });
+
+                // Add event listeners to "Mark as Complete" buttons
+                document.querySelectorAll('.mark-complete-btn').forEach(button => {
+                    button.addEventListener('click', () => {
+                        markModuleComplete(userId, button.dataset.courseId, button.dataset.moduleId, button);
                     });
+                });
 
-                    // Add event listeners to "Mark as Complete" buttons
-                    document.querySelectorAll('.mark-complete-btn').forEach(button => {
-                        button.addEventListener('click', () => {
-                            markModuleComplete(userId, button.dataset.courseId, button.dataset.moduleId, button);
-                        });
-                    });
-
-                } else {
-                    modulesListEl.innerHTML = '<p>No modules available for this course.</p>';
-                }
-            });
-        });
+            } else {
+                modulesListEl.innerHTML = '<p>No modules available for this course.</p>';
+            }
+        } catch (error) {
+            console.error("Error loading course details:", error);
+            mainContent.innerHTML = '<p>Error loading course details.</p>';
+        }
 
         // Simulate upload assignment button
         const uploadBtn = document.getElementById('upload-assignment-btn');
@@ -448,36 +481,34 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    function markModuleComplete(userId, courseId, moduleId, button) {
-        const progressRef = db.ref(`users/${userId}/progress/${courseId}/completedModules`);
-        progressRef.once('value', (snapshot) => {
+    async function markModuleComplete(userId, courseId, moduleId, button) {
+        const progressDbRef = ref(db, `users/${userId}/progress/${courseId}/completedModules`);
+        try {
+            const snapshot = await get(progressDbRef);
             let completedModules = snapshot.val() || [];
             if (!Array.isArray(completedModules)) completedModules = []; // Ensure it's an array
 
             if (!completedModules.includes(moduleId)) {
                 completedModules.push(moduleId);
-                progressRef.set(completedModules)
-                    .then(() => {
-                        console.log(`Module ${moduleId} for course ${courseId} marked as complete for user ${userId}.`);
-                        if (button) {
-                            button.textContent = 'Completed';
-                            button.disabled = true;
-                            const statusEl = button.parentElement.querySelector('.module-status');
-                            if(statusEl) statusEl.textContent = 'Completed';
-                        }
-                        // Potentially update dashboard progress bar if on dashboard or trigger a refresh
-                        if (window.location.pathname.endsWith('dashboard.html')) {
-                             // Re-fetch user data to update dashboard view
-                             const user = auth.currentUser;
-                             if(user) loadUserData(user);
-                        }
-                    })
-                    .catch(error => {
-                        console.error("Error marking module complete:", error);
-                        alert(`Error: ${error.message}`);
-                    });
+                await set(progressDbRef, completedModules);
+
+                console.log(`Module ${moduleId} for course ${courseId} marked as complete for user ${userId}.`);
+                if (button) {
+                    button.textContent = 'Completed';
+                    button.disabled = true;
+                    const statusEl = button.parentElement.querySelector('.module-status');
+                    if(statusEl) statusEl.textContent = 'Completed';
+                }
+
+                if (window.location.pathname.endsWith('dashboard.html')) {
+                     const currentUser = auth.currentUser; // Re-fetch user from auth
+                     if(currentUser) loadUserData(currentUser); // This will re-trigger dashboard load
+                }
             }
-        });
+        } catch (error) {
+            console.error("Error marking module complete:", error);
+            alert(`Error: ${error.message}`);
+        }
     }
 
     // Initial check for auth section visibility on index.html
