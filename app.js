@@ -120,8 +120,8 @@ function updateUIForLoggedInUser(user) {
     if (welcomeMessage && (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/'))) {
         welcomeMessage.classList.remove('hidden');
         const h1 = welcomeMessage.querySelector('h1');
-        if(h1 && user.displayName) h1.textContent = `Welcome, ${user.displayName}!`;
-        else if(h1) h1.textContent = `Welcome!`;
+        // DisplayName for welcome message will be updated by loadUserData if available from DB
+        if(h1) h1.textContent = `Welcome, ${user.displayName || user.email || 'User'}!`;
     }
 
     Object.values(mainContentPages).forEach(pageEl => {
@@ -134,6 +134,9 @@ function updateUIForLoggedInUser(user) {
     } else if (currentPage === '' || currentPage === 'index.html') {
          if(mainContentPages.home) mainContentPages.home.classList.remove('hidden');
     }
+    // Show Profile link now that user is logged in
+    const profileNavLink = document.getElementById('profile-nav-link');
+    if(profileNavLink) profileNavLink.classList.remove('hidden');
 }
 
 function updateUIForLoggedOutUser() {
@@ -154,6 +157,9 @@ function updateUIForLoggedOutUser() {
     if(adminNavLink) adminNavLink.classList.add('hidden');
     const studentChatNavLink = document.getElementById('student-chat-nav-link');
     if(studentChatNavLink) studentChatNavLink.classList.add('hidden');
+    const profileNavLink = document.getElementById('profile-nav-link');
+    if(profileNavLink) profileNavLink.classList.add('hidden');
+
 
     const currentPage = window.location.pathname.split("/").pop();
     const protectedPages = ['dashboard.html', 'profile.html', 'course.html', 'admin.html', 'chat.html'];
@@ -435,13 +441,13 @@ function loadUserData(user) {
         const userData = snapshot.val();
         const adminNavLink = document.getElementById('admin-nav-link');
         const studentChatNavLink = document.getElementById('student-chat-nav-link');
+        const profileNavLink = document.getElementById('profile-nav-link');
 
-        if(studentChatNavLink) studentChatNavLink.classList.remove('hidden');
 
-        if (userData) {
+        if (userData) { // User data exists in DB
             console.log('loadUserData - userData object:', JSON.stringify(userData, null, 2));
-            const userNameEl = document.getElementById('user-name');
-            const userEmailEl = document.getElementById('user-email');
+            const userNameEl = document.getElementById('user-name');  // Used on profile page
+            const userEmailEl = document.getElementById('user-email'); // Used on profile page
             if (userNameEl) userNameEl.textContent = userData.displayName || 'N/A';
             if (userEmailEl) userEmailEl.textContent = userData.email || 'N/A';
 
@@ -457,6 +463,8 @@ function loadUserData(user) {
                     adminNavLink.classList.add('hidden');
                 }
             }
+            if(studentChatNavLink) studentChatNavLink.classList.remove('hidden');
+            if(profileNavLink) profileNavLink.classList.remove('hidden');
 
             const currentPage = window.location.pathname.split("/").pop();
             if (currentPage === 'admin.html') {
@@ -532,10 +540,11 @@ function loadUserData(user) {
                   loadAllCourses(user.uid);
             }
 
-        } else {
+        } else { // User is authenticated (user object exists), but no data record in DB
             console.error('loadUserData - userData is null or undefined for UID:', user.uid);
             if (window.location.pathname.endsWith('profile.html')) clearProfilePageData();
             if (adminNavLink) adminNavLink.classList.add('hidden');
+            // studentChatNavLink is already shown if user is logged in by updateUIForLoggedInUser.
 
             const currentPage = window.location.pathname.split("/").pop();
             const protectedPagesForNoData = ['dashboard.html', 'profile.html', 'course.html', 'admin.html'];
@@ -554,7 +563,7 @@ function loadUserData(user) {
 }
 
 // --- Other Functions (Academic Progress, Course Loaders, etc.) ---
-async function loadAcademicProgress(userId) {
+async function loadAcademicProgress(userId) { /* ...as before... */
     const coursesInProgressEl = document.getElementById('courses-in-progress');
     const assignmentsDueEl = document.getElementById('assignments-due');
     const upcomingExamsEl = document.getElementById('upcoming-exams');
@@ -583,7 +592,7 @@ async function loadAcademicProgress(userId) {
         coursesInProgressEl.textContent = 'N/A'; assignmentsDueEl.textContent = 'N/A'; upcomingExamsEl.textContent = 'N/A';
     }
 }
-async function loadAllCourses(currentUserId) {
+async function loadAllCourses(currentUserId) { /* ...as before... */
     const coursesDbRef = ref(db, 'courses');
     const coursesContainer = document.getElementById('courses-container');
     if (!coursesContainer) return;
@@ -625,7 +634,7 @@ async function loadAllCourses(currentUserId) {
         coursesContainer.innerHTML = '<p>Error loading courses. Please try again later.</p>';
     }
 }
-async function enrollInCourse(userId, courseId, button) {
+async function enrollInCourse(userId, courseId, button) { /* ...as before... */
     const userCoursesDbRef = ref(db, 'users/' + userId + '/enrolledCourses');
     try {
         const snapshot = await get(userCoursesDbRef);
@@ -656,7 +665,7 @@ async function enrollInCourse(userId, courseId, button) {
         }
     } catch (e) { console.error("Error enrolling:", e); alert(`Error enrolling: ${e.message}`); }
 }
-async function loadEnrolledCourses(userId, enrolledCoursesData, userProgress) {
+async function loadEnrolledCourses(userId, enrolledCoursesData, userProgress) { /* ...as before... */
     const enrolledCoursesList = document.getElementById('enrolled-courses-list');
     if (!enrolledCoursesList) return;
     enrolledCoursesList.innerHTML = '';
@@ -694,7 +703,7 @@ async function loadEnrolledCourses(userId, enrolledCoursesData, userProgress) {
         } catch (error) { console.error(`Error loading enrolled course ${courseId}:`, error); }
     }
 }
-function loadAnnouncements(enrolledCoursesData) {
+function loadAnnouncements(enrolledCoursesData) { /* ...as before... */
     const announcementsList = document.getElementById('announcements-list');
     if (!announcementsList) return;
     announcementsList.innerHTML = '';
@@ -721,7 +730,7 @@ function loadAnnouncements(enrolledCoursesData) {
         if (!found) announcementsList.innerHTML = '<li>No new announcements for your courses.</li>';
     }, (err) => { console.error("Error loading announcements:", err); announcementsList.innerHTML = '<li>Error loading.</li>';});
 }
-async function loadCourseAssessments(courseId, userId) {
+async function loadCourseAssessments(courseId, userId) { /* ...as before... */
     const examsListEl = document.getElementById('exams-list');
     const assignmentsListEl = document.getElementById('assignments-list');
     if (!examsListEl || !assignmentsListEl) { console.warn("Assessment elements missing."); return; }
@@ -744,7 +753,7 @@ async function loadCourseAssessments(courseId, userId) {
         }); else assignmentsListEl.innerHTML += '<p>No assignments.</p>';
     } catch (e) { console.error("Error loading assessments:", e); examsListEl.innerHTML+='Error.'; assignmentsListEl.innerHTML+='Error.';}
 }
-async function markModuleComplete(userId, courseId, moduleId, button) {
+async function markModuleComplete(userId, courseId, moduleId, button) { /* ...as before... */
     const progRef = ref(db, `users/${userId}/progress/${courseId}/completedModules`);
     try {
         const snap = await get(progRef); let completed = snap.val() || [];
@@ -759,7 +768,7 @@ async function markModuleComplete(userId, courseId, moduleId, button) {
         }
     } catch (e) { console.error("Error marking module complete:", e); alert(`Error: ${e.message}`); }
 }
-async function approveCourseEnrollment(userId, courseIdToApprove) {
+async function approveCourseEnrollment(userId, courseIdToApprove) { /* ...as before... */
     const userEnrollmentsRef = ref(db, `users/${userId}/enrolledCourses`);
     try {
         const snapshot = await get(userEnrollmentsRef);
@@ -774,7 +783,7 @@ async function approveCourseEnrollment(userId, courseIdToApprove) {
         } else { alert(`Could not find pending enrollment for ${courseIdToApprove}.`); }
     } catch (e) { console.error("Error approving enrollment:", e); alert(`Error: ${e.message}`); }
 }
-async function loadPlatformNews() {
+async function loadPlatformNews() { /* ...as before... */
     const el = document.getElementById('platform-news-list'); if (!el) return;
     el.innerHTML = '<li>Loading...</li>';
     try {
@@ -820,18 +829,6 @@ async function ensureSampleDataIsPopulated() {
         }
     } catch (e) { console.error("Error during sample data check/population:", e); }
 }
-
-// --- Main Auth State Listener (Defined once, globally) ---
-onAuthStateChanged(auth, user => {
-    if (user) {
-        console.log('onAuthStateChanged - User:', user.uid);
-        updateUIForLoggedInUser(user);
-        loadUserData(user);
-    } else {
-        console.log('User is signed out.');
-        updateUIForLoggedOutUser();
-    }
-});
 
 // --- DOMContentLoaded Initial Setup ---
 document.addEventListener('DOMContentLoaded', async () => {

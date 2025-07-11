@@ -1,6 +1,12 @@
-/* MIT-Inspired Color Scheme */
+/* Royal African College Color Scheme */
 :root {
-    --mit-red: #A31F34;
+    --royal-blue: #1A237E;
+    --carbon-black: #121212;
+    --cyan-glow: #00B8D4;
+    --soft-gray: #F5F5F5; /* For cards and content blocks on a light theme, or text on dark */
+    --text-white: #FFFFFF;
+    --text-deep-gray: #333333; /* For text on light backgrounds */
+    --mit-red: #A31F34; /* Keeping for existing styles that might use it, can be phased out */
     --mit-dark-red: #861F41;
     --mit-light-gray: #F2F2F2;
     --mit-dark-gray: #8A8B8C;
@@ -8,70 +14,80 @@
 
 /* General Styles */
 body {
-    font-family: 'Inter', sans-serif; /* Updated Font */
+    font-family: 'Inter', sans-serif;
     margin: 0;
     padding: 0;
-    background-color: #ffffff;
-    color: #333333;
-    line-height: 1.7; /* Updated Line Height */
+    background-color: var(--carbon-black); /* Dark theme foundation */
+    color: var(--text-white); /* Default text color for dark theme */
+    line-height: 1.7;
 }
 
 .container {
-    width: 80%;
+    width: 90%; /* More responsive base */
     margin: 0 auto;
-    max-width: 1200px;
-    padding: 0 20px;
+    max-width: 1300px; /* Slightly wider max for modern feel */
+    padding: 0 15px; /* Slightly reduced padding for tighter feel */
 }
 
 /* Typography */
-h1, h2, h3, h4 { /* Combined h4 */
-    font-weight: 600;
-    color: #222;
-    margin-top: 0; /* Moved from individual h tags */
+h1, h2, h3, h4 {
+    font-weight: 600; /* Consistent weight */
+    color: var(--text-white); /* Default heading color for dark theme */
+    margin-top: 0;
 }
 
 h1 {
-    font-size: 2.2em; /* Updated Size */
-    margin-bottom: 0.8em; /* Updated Margin */
-    color: var(--mit-red); /* Updated Color */
+    font-size: 2.4em; /* Slightly larger for impact */
+    margin-bottom: 0.8em;
+    color: var(--royal-blue); /* Primary color for main page titles */
 }
 
 h2 {
     font-size: 2em;
     margin-bottom: 0.75em;
-    border-bottom: 1px solid #eee;
+    /* Removing border-bottom for a cleaner look, can be added per section if needed */
     padding-bottom: 0.3em;
+    color: var(--soft-gray); /* Softer heading color */
 }
 
 h3 {
-    font-size: 1.5em;
+    font-size: 1.6em; /* Slightly larger */
     margin-bottom: 0.5em;
+    color: var(--soft-gray);
 }
-/* h4 is covered by the combined rule */
+
+h4 {
+    font-size: 1.3em; /* Added specific h4 styling */
+    color: var(--soft-gray);
+}
+
 
 p {
-    margin-bottom: 1em;
+    margin-bottom: 1.2em; /* Slightly more spacing for readability */
+    color: var(--mit-light-gray); /* Lighter gray for paragraph text on dark background */
 }
 
 a {
-    color: var(--mit-red); /* Updated default link color */
+    color: var(--royal-blue);
     text-decoration: none;
+    transition: color 0.3s ease;
 }
 
 a:hover {
-    text-decoration: underline;
-    color: var(--mit-dark-red); /* Darker red on hover */
+    color: var(--cyan-glow);
+    text-decoration: none; /* Keep no underline on hover for clean look */
 }
 
-/* Header/Navigation */
+/* Header/Navigation (Updated) */
 nav {
-    background-color: var(--mit-red); /* MIT Red */
-    color: white;
-    padding: 0.8em 0; /* Adjusted Padding */
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    background-color: var(--carbon-black);
+    color: var(--text-white);
+    padding: 1em 0;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
     position: sticky;
     top: 0;
     z-index: 1000;
+    width: 100%;
 }
 
 nav .container {
@@ -81,10 +97,12 @@ nav .container {
 }
 
 nav .logo {
-    color: white; /* Logo color */
-    font-weight: 700; /* Logo font weight */
-    font-size: 1.8em; /* Logo font size */
-    font-family: 'Inter', sans-serif; /* Ensure Inter font */
+    color: var(--text-white);
+    font-weight: 700;
+    font-size: 1.6em;
+    font-family: 'Inter', sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 1px;
 }
 
 nav ul {
@@ -92,25 +110,40 @@ nav ul {
     padding: 0;
     margin: 0;
     display: flex;
+    align-items: center;
 }
 
 nav ul li {
-    margin-left: 20px;
+    margin-left: 15px;
 }
 
 nav ul li a {
-    color: white; /* Nav link color */
-    font-weight: 500; /* Nav link font weight */
-    padding: 0.5em 1em; /* Nav link padding */
-    border-radius: 4px; /* Nav link border radius */
-    transition: background-color 0.3s; /* Nav link transition */
+    color: var(--soft-gray);
+    font-weight: 500;
+    padding: 0.6em 1em;
+    border-radius: 4px;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+    text-transform: uppercase;
+    font-size: 0.9em;
 }
 
-nav ul li a:hover {
-    background-color: var(--mit-dark-red); /* Nav link hover background */
-    text-decoration: none; /* Remove underline on hover */
-    color: white; /* Ensure text color remains white on hover */
+nav ul li a:hover,
+nav ul li a.active {
+    background-color: var(--royal-blue);
+    color: var(--text-white);
+    text-decoration: none;
 }
+
+#auth-status a {
+    /* Custom styling if it needs to look different, e.g., like a button */
+    /* background-color: var(--royal-blue); */
+    /* color: var(--text-white); */
+}
+/* #auth-status a:hover {
+    background-color: var(--cyan-glow);
+    color: var(--carbon-black);
+} */
+
 
 /* Header / Auth Section */
 header#auth-section {
