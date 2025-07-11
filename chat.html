@@ -3,9 +3,53 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Course Detail - University Portal</title>
+    <title>Student Chat - University Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <style>
+        .chat-container {
+            max-width: 800px;
+            margin: 2em auto;
+            padding: 2em;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        #chat-messages-area {
+            height: 400px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+        }
+        .chat-message {
+            padding: 8px 12px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            line-height: 1.4;
+        }
+        .chat-message strong {
+            color: var(--mit-red);
+        }
+        .chat-message .timestamp {
+            font-size: 0.8em;
+            color: #777;
+            margin-left: 10px;
+        }
+        #chat-input-area {
+            display: flex;
+            gap: 10px;
+        }
+        #chat-message-input {
+            flex-grow: 1;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
 </head>
 <body>
     <nav>
@@ -15,44 +59,24 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="dashboard.html">My Courses</a></li>
                 <li><a href="profile.html">Profile</a></li>
-                <li id="student-chat-nav-link" class="hidden"><a href="chat.html">Student Chat</a></li>
                 <li id="admin-nav-link" class="hidden"><a href="admin.html">Admin</a></li>
+                <li id="student-chat-nav-link" class="hidden"><a href="chat.html">Student Chat</a></li>
                 <li id="auth-status"><a href="#" id="login-logout">Login</a></li>
             </ul>
         </div>
     </nav>
 
-    <main id="course-detail-page" class="container page-content">
-        <section id="course-content">
-            <h1 id="course-title">Course Title</h1>
-            <p><strong>Code:</strong> <span id="course-code-display">N/A</span></p>
-            <p><strong>Credits:</strong> <span id="course-credits-display">N/A</span></p>
-            <p><strong>Syllabus:</strong> <span id="course-syllabus">Course syllabus will appear here.</span></p>
-
-            <h2>Modules</h2>
-            <div id="modules-list">
-                <!-- Modules will be dynamically loaded here -->
-            </div>
-
-            <button id="upload-assignment-btn" class="btn">Upload Assignment (Simulated)</button>
-        </section>
-
-        <!-- Add this section below the modules list -->
-        <section id="course-assessments">
-            <h2>Assessments</h2>
-            <div id="exams-list">
-                <!-- Exams will be dynamically loaded here -->
-            </div>
-            <div id="assignments-list">
-                <!-- Assignments will be dynamically loaded here -->
-            </div>
-        </section>
+    <main class="container chat-container">
+        <h1>Student Chat</h1>
+        <div id="chat-messages-area">
+            <p>Loading messages...</p>
+        </div>
+        <div id="chat-input-area">
+            <input type="text" id="chat-message-input" placeholder="Type your message...">
+            <button id="send-chat-message-btn" class="btn">Send</button>
+        </div>
     </main>
 
-    <footer>
-        <div class="container">
-            <p>&copy; 2024 University Portal. Inspired by MIT OpenCourseWare.</p>
-        </div>
     <footer>
         <div class="container">
             <div class="footer-content">
@@ -81,7 +105,6 @@
         </div>
     </footer>
 
-    <!-- Firebase v11+ uses ES Modules -->
     <script type="module" src="firebase-config.js"></script>
     <script type="module" src="app.js"></script>
 </body>

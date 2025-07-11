@@ -13,11 +13,13 @@ import {
     set,
     get,
     child,
-    onValue,
+    onValue, // Keep onValue for real-time updates like announcements/chat if needed later, though get is used for one-time loads.
     update,
     push,
     orderByChild,
-    query
+    query,
+    limitToLast, // For chat messages
+    onChildAdded // For chat messages
 } from "https://www.gstatic.com/firebasejs/11.10.0/firebase-database.js";
 import {
     getStorage,
@@ -58,12 +60,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     const authSection = document.getElementById('auth-section');
     const authError = document.getElementById('auth-error');
     const welcomeMessage = document.getElementById('welcome-message');
-    const mainContentPages = {
+    const mainContentPages = { // For showing/hiding main content sections
         home: document.getElementById('home-page'),
         dashboard: document.getElementById('dashboard-page'),
         courseDetail: document.getElementById('course-detail-page'),
         profile: document.getElementById('profile-page'),
-        admin: document.getElementById('admin-page') // Added for admin page logic
+        admin: document.getElementById('admin-page'),
+        chat: document.querySelector('.chat-container') // Assuming chat.html has a main container with this class
     };
 
     const storage = getStorage(auth.app);
@@ -161,10 +164,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (loginForm) {
         loginForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            // ... (login logic remains the same) ...
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
-
             signInWithEmailAndPassword(auth, email, password)
                 .then(userCredential => {
                     console.log('User logged in:', userCredential.user.uid);
@@ -187,20 +188,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (logoutButton) logoutButton.addEventListener('click', handleLogout);
 
+    // Main Auth State Listener
     onAuthStateChanged(auth, user => {
         if (user) {
             console.log('onAuthStateChanged - User:', user);
             console.log('onAuthStateChanged - User UID:', user.uid);
-            updateUIForLoggedInUser(user);
-            loadUserData(user);
+            updateUIForLoggedInUser(user); // Handles general UI changes like nav links
+            loadUserData(user); // Fetches user-specific data from DB for profile/dashboard/admin checks
+
+            // Page-specific initializations that depend on user being authenticated
+            const currentPage = window.location.pathname.split("/").pop();
+            if (currentPage === 'admin.html') {
+                initializeAdminPageLogic(user); // Protects and initializes admin page
+            } else if (currentPage === 'course.html') {
+                loadCourseDetailsWithAccessCheck(user); // Handles course page access and content
+            } else if (currentPage === 'chat.html') {
+                initializeChatPage(user); // Initializes chat functionality
+            }
         } else {
             console.log('User is signed out.');
-            updateUIForLoggedOutUser();
+            updateUIForLoggedOutUser(); // Handles UI for signed-out state and redirects
         }
     });
 
     function updateUIForLoggedInUser(user) {
-        // ... (UI update logic for login/logout nav, auth section visibility) ...
         if (loginLogoutNav) {
             loginLogoutNav.textContent = 'Logout';
             loginLogoutNav.removeEventListener('click', showAuthSection);
@@ -211,25 +222,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
         if (authSection) authSection.classList.add('hidden');
 
+        // Admin and Chat nav links are handled within loadUserData based on role/login status
+        // For other general page content visibility:
         const currentPage = window.location.pathname.split("/").pop();
         if (currentPage === 'index.html' || currentPage === '') {
             if(mainContentPages.home) mainContentPages.home.classList.remove('hidden');
             if(welcomeMessage) welcomeMessage.classList.remove('hidden');
-            loadAllCourses(user.uid);
-        } else if (currentPage === 'dashboard.html') {
-            if(mainContentPages.dashboard) mainContentPages.dashboard.classList.remove('hidden');
-        } else if (currentPage === 'profile.html') {
-             if(mainContentPages.profile) mainContentPages.profile.classList.remove('hidden');
-        } else if (currentPage === 'course.html') {
-            // Access control for course.html is now handled within loadCourseDetailsWithAccessCheck
-            // if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden');
-        } else if (currentPage === 'admin.html') {
-            if(mainContentPages.admin) mainContentPages.admin.classList.remove('hidden');
+            // loadAllCourses is called within loadUserData if on index page
+        } else if (mainContentPages[currentPage.split('.')[0]]) { // e.g. mainContentPages.dashboard
+             if(mainContentPages[currentPage.split('.')[0]]) mainContentPages[currentPage.split('.')[0]].classList.remove('hidden');
         }
     }
 
     function showAuthSection(e){
-        // ... (showAuthSection logic remains the same) ...
         if(e) e.preventDefault();
         if (authSection) authSection.classList.remove('hidden');
         if (welcomeMessage) welcomeMessage.classList.add('hidden');
@@ -240,7 +245,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateUIForLoggedOutUser() {
-        // ... (UI update logic for logged out user remains largely the same) ...
         if (loginLogoutNav) {
             loginLogoutNav.textContent = 'Login';
             loginLogoutNav.removeEventListener('click', handleLogout);
@@ -249,9 +253,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const adminNavLink = document.getElementById('admin-nav-link');
         if(adminNavLink) adminNavLink.classList.add('hidden');
 
+        const studentChatNavLink = document.getElementById('student-chat-nav-link');
+        if(studentChatNavLink) studentChatNavLink.classList.add('hidden');
 
         const currentPage = window.location.pathname.split("/").pop();
-        if (currentPage === 'dashboard.html' || currentPage === 'profile.html' || currentPage === 'course.html' || currentPage === 'admin.html') {
+        const protectedPages = ['dashboard.html', 'profile.html', 'course.html', 'admin.html', 'chat.html'];
+        if (protectedPages.includes(currentPage)) {
             window.location.href = 'index.html';
         } else if (currentPage === 'index.html' || currentPage === '') {
             if (authSection) authSection.classList.remove('hidden');
@@ -260,24 +267,25 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (coursesContainer) coursesContainer.innerHTML = '<p>Please log in or sign up to see courses.</p>';
         }
 
-        if (window.location.pathname.endsWith('profile.html')) {
+        if (window.location.pathname.endsWith('profile.html')) { // Should not be reachable if logged out due to redirect
             clearProfilePageData();
         }
+        // Clear other dynamic content areas if needed
         if (document.getElementById('enrolled-courses-list')) document.getElementById('enrolled-courses-list').innerHTML = '';
         if (document.getElementById('announcements-list')) document.getElementById('announcements-list').innerHTML = '<li>No new announcements.</li>';
+        if (document.getElementById('platform-news-list')) document.getElementById('platform-news-list').innerHTML = '<li>No platform news.</li>';
+        if (document.getElementById('chat-messages-area')) document.getElementById('chat-messages-area').innerHTML = '<p>Please log in to chat.</p>';
     }
 
     // --- USER DATA HANDLING ---
-
     function clearProfilePageData() {
-        // ... (clearProfilePageData logic remains the same) ...
         const profileFieldsIds = [
             'user-name', 'user-email', 'user-role', 'user-dob', 'user-gender',
             'user-phone', 'user-address-street', 'user-address-city', 'user-address-state',
             'user-address-zip', 'user-address-country', 'user-prev-education',
             'user-degree', 'user-major', 'user-minor', 'user-emergency-name',
             'user-emergency-relationship', 'user-emergency-phone', 'user-terms-accepted',
-            'user-fees-balance' // Added fees balance
+            'user-fees-balance'
         ];
         profileFieldsIds.forEach(id => {
             const el = document.getElementById(id);
@@ -299,7 +307,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function loadUserData(user) {
-        // ... (loadUserData logic with detailed logging and profile population remains the same) ...
         console.log("--- loadUserData: CALLED for UID: " + user.uid + " ---");
         console.log("loadUserData: User object passed:", user);
 
@@ -310,14 +317,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log('loadUserData - Raw snapshot value for UID ' + user.uid + ':', snapshot.val());
             const userData = snapshot.val();
             const adminNavLink = document.getElementById('admin-nav-link');
+            const studentChatNavLink = document.getElementById('student-chat-nav-link');
 
             if (userData) {
                 console.log('loadUserData - userData object:', JSON.stringify(userData, null, 2));
-                console.log('loadUserData - displayName:', userData.displayName);
-                console.log('loadUserData - profilePictureURL:', userData.profilePictureURL);
-                console.log('loadUserData - personalDetails:', userData.personalDetails);
-                console.log('loadUserData - contactInfo address city:', userData.contactInfo?.address?.city);
-
                 const userNameEl = document.getElementById('user-name');
                 const userEmailEl = document.getElementById('user-email');
                 if (userNameEl) userNameEl.textContent = userData.displayName || 'N/A';
@@ -330,27 +333,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                         adminNavLink.classList.add('hidden');
                     }
                 }
+                if(studentChatNavLink) studentChatNavLink.classList.remove('hidden');
 
                 if (window.location.pathname.endsWith('profile.html')) {
                     const userRoleEl = document.getElementById('user-role');
                     if (userRoleEl) userRoleEl.textContent = userData.role || 'N/A';
-
                     const profilePicEl = document.getElementById('profile-picture');
                     if (profilePicEl) {
-                        if (userData.profilePictureURL) {
-                            profilePicEl.src = userData.profilePictureURL;
-                            profilePicEl.style.display = 'block';
-                        } else {
-                            profilePicEl.src = '#';
-                            profilePicEl.style.display = 'block';
-                        }
+                        profilePicEl.src = userData.profilePictureURL || '#';
+                        profilePicEl.style.display = 'block';
                     }
-
                     const setText = (id, value) => {
                         const el = document.getElementById(id);
                         if (el) el.textContent = value || 'N/A'; else console.warn(`Element with ID ${id} not found for profile page.`);
                     };
-
                     setText('user-dob', userData.personalDetails?.dateOfBirth);
                     setText('user-gender', userData.personalDetails?.gender);
                     setText('user-phone', userData.contactInfo?.phone);
@@ -360,7 +356,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                     setText('user-address-zip', userData.contactInfo?.address?.zip);
                     setText('user-address-country', userData.contactInfo?.address?.country);
                     setText('user-prev-education', userData.academicBackground?.previousEducation);
-
                     const transcriptsLink = document.getElementById('user-transcripts-link');
                     const transcriptsNA = document.getElementById('user-transcripts-na');
                     if (transcriptsLink && transcriptsNA) {
@@ -373,10 +368,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                             transcriptsNA.classList.remove('hidden');
                             transcriptsNA.textContent = 'N/A';
                         }
-                    } else {
-                         console.warn("Transcript link or NA elements not found on profile page.");
-                    }
-
+                    } else { console.warn("Transcript link or NA elements not found on profile page.");}
                     setText('user-degree', userData.programSelection?.degree);
                     setText('user-major', userData.programSelection?.major);
                     setText('user-minor', userData.programSelection?.minor);
@@ -384,14 +376,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                     setText('user-emergency-relationship', userData.emergencyContact?.relationship);
                     setText('user-emergency-phone', userData.emergencyContact?.phone);
                     setText('user-terms-accepted', userData.termsAccepted ? 'Yes' : 'No');
-
                     const feesBalanceEl = document.getElementById('user-fees-balance');
                     if (feesBalanceEl) {
                         if (userData.feesBalance) {
                             feesBalanceEl.textContent = `${userData.feesBalance.currency} ${userData.feesBalance.amount.toLocaleString()}`;
-                        } else {
-                            feesBalanceEl.textContent = 'N/A';
-                        }
+                        } else { feesBalanceEl.textContent = 'N/A'; }
                     }
                 }
 
@@ -400,111 +389,75 @@ document.addEventListener('DOMContentLoaded', async () => {
                     loadEnrolledCourses(user.uid, enrolledCoursesList, userData.progress || {});
                     loadAnnouncements(enrolledCoursesList);
                     loadAcademicProgress(user.uid);
+                    loadPlatformNews();
                 }
+                 // Load all courses for index page if user is logged in
+                if (window.location.pathname.endsWith('index.html') || window.location.pathname === '/') {
+                    loadAllCourses(user.uid);
+                }
+
             } else {
                 console.error('loadUserData - userData is null or undefined for UID:', user.uid);
-                if (window.location.pathname.endsWith('profile.html')) {
-                    clearProfilePageData();
-                }
-                if (adminNavLink) {
-                    adminNavLink.classList.add('hidden');
-                }
+                if (window.location.pathname.endsWith('profile.html')) clearProfilePageData();
+                if (adminNavLink) adminNavLink.classList.add('hidden');
+                if (studentChatNavLink) studentChatNavLink.classList.add('hidden');
             }
         }).catch((error) => {
             console.error('loadUserData - Firebase get() error for UID:', user.uid, error);
-            if (window.location.pathname.endsWith('profile.html')) {
-                clearProfilePageData();
-            }
+            if (window.location.pathname.endsWith('profile.html')) clearProfilePageData();
             const adminNavLink = document.getElementById('admin-nav-link');
-            if (adminNavLink) {
-                adminNavLink.classList.add('hidden');
-            }
+            if (adminNavLink) adminNavLink.classList.add('hidden');
+            const studentChatNavLink = document.getElementById('student-chat-nav-link');
+            if(studentChatNavLink) studentChatNavLink.classList.add('hidden');
         });
-
-        // If on course detail page, load its details
-        if (window.location.pathname.endsWith('course.html')) {
-           loadCourseDetailsWithAccessCheck(user); // Changed to new access check function
-        }
     }
 
     async function loadAcademicProgress(userId) {
-        // ... (loadAcademicProgress logic remains the same) ...
         const coursesInProgressEl = document.getElementById('courses-in-progress');
         const assignmentsDueEl = document.getElementById('assignments-due');
         const upcomingExamsEl = document.getElementById('upcoming-exams');
-
-        if (!coursesInProgressEl || !assignmentsDueEl || !upcomingExamsEl) {
-            return;
-        }
-
+        if (!coursesInProgressEl || !assignmentsDueEl || !upcomingExamsEl) return;
         try {
             const enrolledCoursesSnapshot = await get(ref(db, `users/${userId}/enrolledCourses`));
             const enrolledCourses = enrolledCoursesSnapshot.val() || [];
-
             coursesInProgressEl.textContent = enrolledCourses.length;
-
             let assignmentsDueCount = 0;
             let upcomingExamsCount = 0;
             const now = Date.now();
-
             for (const courseEnrollment of enrolledCourses) {
                 const courseId = typeof courseEnrollment === 'object' && courseEnrollment !== null ? courseEnrollment.courseId : null;
                 if (!courseId) continue;
-
                 const assignmentsSnapshot = await get(ref(db, `courses/${courseId}/assignments`));
                 const assignments = assignmentsSnapshot.val();
-                if (assignments) {
-                    Object.values(assignments).forEach(assignment => {
-                        if (assignment.dueDate > now) {
-                            assignmentsDueCount++;
-                        }
-                    });
-                }
-
+                if (assignments) Object.values(assignments).forEach(a => { if (a.dueDate > now) assignmentsDueCount++; });
                 const examsSnapshot = await get(ref(db, `courses/${courseId}/exams`));
                 const exams = examsSnapshot.val();
-                if (exams) {
-                    Object.values(exams).forEach(exam => {
-                        if (exam.date > now) {
-                            upcomingExamsCount++;
-                        }
-                    });
-                }
+                if (exams) Object.values(exams).forEach(ex => { if (ex.date > now) upcomingExamsCount++; });
             }
-
             assignmentsDueEl.textContent = assignmentsDueCount;
             upcomingExamsEl.textContent = upcomingExamsCount;
-
         } catch (error) {
             console.error("Error loading academic progress:", error);
-            coursesInProgressEl.textContent = 'N/A';
-            assignmentsDueEl.textContent = 'N/A';
-            upcomingExamsEl.textContent = 'N/A';
+            coursesInProgressEl.textContent = 'N/A'; assignmentsDueEl.textContent = 'N/A'; upcomingExamsEl.textContent = 'N/A';
         }
     }
 
     // --- COURSE & PORTAL FUNCTIONALITY ---
-
     async function loadAllCourses(currentUserId) {
-        // ... (loadAllCourses logic remains the same) ...
         const coursesDbRef = ref(db, 'courses');
         const coursesContainer = document.getElementById('courses-container');
         if (!coursesContainer) return;
-
         try {
             const coursesSnapshot = await get(coursesDbRef);
             coursesContainer.innerHTML = '';
             const courses = coursesSnapshot.val();
-
             if (courses) {
                 const userEnrolledCoursesRef = ref(db, 'users/' + currentUserId + '/enrolledCourses');
                 const enrolledSnapshot = await get(userEnrolledCoursesRef);
                 const enrolledCourseObjects = enrolledSnapshot.val() || [];
-
                 for (const courseId in courses) {
                     const course = courses[courseId];
                     const isEnrolled = enrolledCourseObjects.some(ec => ec.courseId === courseId);
-
                     const courseCard = document.createElement('div');
                     courseCard.classList.add('course-card');
                     courseCard.innerHTML = `
@@ -513,17 +466,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <p><strong>Credits:</strong> ${course.creditHours || 'N/A'}</p>
                         <p>${course.description ? course.description.substring(0,150) + '...' : 'No description available.'}</p>
                         <button class="btn enroll-btn" data-course-id="${courseId}" ${isEnrolled ? 'disabled' : ''}>
-                            ${isEnrolled ? 'Enrolled' : 'Enroll'}
-                        </button>
-                    `;
+                            ${isEnrolled ? (enrolledCourseObjects.find(ec=>ec.courseId === courseId)?.currentStatus === 'pending_approval' ? 'Enrollment Pending' : 'Enrolled') : 'Enroll'}
+                        </button>`;
                     coursesContainer.appendChild(courseCard);
                 }
                 document.querySelectorAll('.enroll-btn:not([disabled])').forEach(button => {
                     button.addEventListener('click', () => enrollInCourse(currentUserId, button.dataset.courseId, button));
                 });
-            } else {
-                coursesContainer.innerHTML = '<p>No courses available at the moment.</p>';
-            }
+            } else { coursesContainer.innerHTML = '<p>No courses available at the moment.</p>'; }
         } catch (error) {
             console.error("Error loading courses:", error);
             coursesContainer.innerHTML = '<p>Error loading courses. Please try again later.</p>';
@@ -531,451 +481,229 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     async function enrollInCourse(userId, courseId, button) {
-        // ... (enrollInCourse logic remains the same - sets currentStatus to 'pending_approval') ...
         const userCoursesDbRef = ref(db, 'users/' + userId + '/enrolledCourses');
         try {
             const snapshot = await get(userCoursesDbRef);
             let enrolledCoursesArray = snapshot.val() || [];
             if (!Array.isArray(enrolledCoursesArray)) enrolledCoursesArray = [];
-
             const isAlreadyEnrolled = enrolledCoursesArray.some(enrollment => enrollment.courseId === courseId);
-
             if (!isAlreadyEnrolled) {
                 const courseSnapshot = await get(ref(db, 'courses/' + courseId));
                 const course = courseSnapshot.val();
-
-                if (!course) {
-                    alert("Error: Course details not found. Cannot enroll.");
-                    console.error("Course details not found for courseId:", courseId);
-                    return;
-                }
-
+                if (!course) { alert("Error: Course details not found."); return; }
                 const enrollmentData = {
-                    courseId: courseId,
-                    enrollmentDate: Date.now(),
-                    title: course.title || "Untitled Course",
-                    currentStatus: 'pending_approval',
-                    lastAccessed: Date.now()
+                    courseId: courseId, enrollmentDate: Date.now(), title: course.title || "Untitled Course",
+                    currentStatus: 'pending_approval', lastAccessed: Date.now()
                 };
-
                 enrolledCoursesArray.push(enrollmentData);
                 await set(userCoursesDbRef, enrolledCoursesArray);
-
-                console.log(`User ${userId} enrolled in course ${courseId}`);
                 alert(`Successfully enrolled in ${course.title || "the course"}! Status: Pending Approval.`);
-
-                if (button) {
-                    button.textContent = 'Enrollment Pending'; // Changed text
-                    button.disabled = true;
-                    button.classList.add('btn-secondary');
-                }
-
+                if (button) { button.textContent = 'Enrollment Pending'; button.disabled = true; button.classList.add('btn-secondary'); }
                 const userProgressDbRef = ref(db, `users/${userId}/progress/${courseId}`);
-                await set(userProgressDbRef, {
-                    completedModules: [],
-                    lastActivity: Date.now(),
-                    totalModules: course.modules ? course.modules.length : 0,
-                    assignmentsSubmitted: 0
-                });
+                await set(userProgressDbRef, { completedModules: [], lastActivity: Date.now(), totalModules: course.modules ? course.modules.length : 0, assignmentsSubmitted: 0 });
             } else {
-                // If already enrolled, check current status to update button text if needed
                 const existingEnrollment = enrolledCoursesArray.find(enrollment => enrollment.courseId === courseId);
                 if (button) {
-                    if (existingEnrollment && existingEnrollment.currentStatus === 'pending_approval') {
-                        button.textContent = 'Enrollment Pending';
-                    } else {
-                        button.textContent = 'Enrolled';
-                    }
-                    button.disabled = true;
-                    button.classList.add('btn-secondary');
+                    button.textContent = existingEnrollment?.currentStatus === 'pending_approval' ? 'Enrollment Pending' : 'Enrolled';
+                    button.disabled = true; button.classList.add('btn-secondary');
                 }
-                 alert('You are already enrolled in this course or your enrollment is pending.');
+                 alert('You are already enrolled or enrollment is pending.');
             }
-        } catch (error) {
-            console.error("Error enrolling in course:", error);
-            alert(`Error enrolling: ${error.message}`);
-        }
+        } catch (error) { console.error("Error enrolling:", error); alert(`Error enrolling: ${error.message}`); }
     }
 
     async function loadEnrolledCourses(userId, enrolledCoursesData, userProgress) {
         const enrolledCoursesList = document.getElementById('enrolled-courses-list');
         if (!enrolledCoursesList) return;
         enrolledCoursesList.innerHTML = '';
-
         if (!enrolledCoursesData || enrolledCoursesData.length === 0) {
             enrolledCoursesList.innerHTML = '<p>You are not enrolled in any courses yet. <a href="index.html">Browse courses</a>.</p>';
             return;
         }
-
         for (const enrollment of enrolledCoursesData) {
             const courseId = enrollment.courseId;
             if (!courseId) continue;
-
             try {
                 const courseSnapshot = await get(ref(db, 'courses/' + courseId));
                 const course = courseSnapshot.val();
                 if (course) {
-                    const courseProg = userProgress[courseId] || { completedModules: [], totalModules: course.modules ? course.modules.length : 0 };
-                    const completedModulesCount = Array.isArray(courseProg.completedModules) ? courseProg.completedModules.length : 0;
-                    const totalModules = course.modules ? course.modules.length : 0;
-                    const progressPercent = totalModules > 0 ? (completedModulesCount / totalModules) * 100 : 0;
-
-                    let statusTextHtml = '';
-                    let viewButtonHtml = `<a href="course.html?id=${courseId}" class="btn">View Course</a>`;
-
+                    const courseProg = userProgress[courseId] || { completedModules: [], totalModules: course.modules?.length || 0 };
+                    const completedCount = courseProg.completedModules?.length || 0;
+                    const totalModules = courseProg.totalModules;
+                    const progressPercent = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
+                    let statusHtml = '', btnHtml = `<a href="course.html?id=${courseId}" class="btn">View Course</a>`;
                     if (enrollment.currentStatus === 'pending_approval') {
-                        statusTextHtml = '<p style="color: orange; font-weight: bold;">Status: Pending Approval</p>';
-                        viewButtonHtml = `<button class="btn btn-secondary" disabled title="Your enrollment is pending approval">View Course</button>`;
+                        statusHtml = '<p style="color: orange; font-weight: bold;">Status: Pending Approval</p>';
+                        btnHtml = `<button class="btn btn-secondary" disabled title="Enrollment pending approval">View Course</button>`;
                     } else if (enrollment.currentStatus === 'active') {
-                        statusTextHtml = '<p style="color: green; font-weight: bold;">Status: Active</p>';
-                    } else if (enrollment.currentStatus) { // Handle other potential statuses
-                         statusTextHtml = `<p style="font-weight: bold;">Status: ${enrollment.currentStatus.replace('_', ' ')}</p>`;
+                        statusHtml = '<p style="color: green; font-weight: bold;">Status: Active</p>';
+                    } else if (enrollment.currentStatus) {
+                         statusHtml = `<p style="font-weight: bold;">Status: ${enrollment.currentStatus.replace('_', ' ')}</p>`;
                     }
-
-
-                    const courseCard = document.createElement('div');
-                    courseCard.classList.add('course-card');
-                    courseCard.innerHTML = `
-                        <h3>${enrollment.title || course.title}</h3>
-                        ${statusTextHtml}
-                        <p>${course.description ? course.description.substring(0,100) + '...' : 'No description.'}</p>
-                        <div class="progress-bar-container">
-                            <div class="progress-bar" style="width: ${progressPercent.toFixed(0)}%;">${progressPercent.toFixed(0)}%</div>
-                        </div>
-                        <p>Modules: ${completedModulesCount} / ${totalModules} completed</p>
-                        ${viewButtonHtml}
-                    `;
-                    enrolledCoursesList.appendChild(courseCard);
+                    const card = document.createElement('div');
+                    card.classList.add('course-card');
+                    card.innerHTML = `<h3>${enrollment.title || course.title}</h3> ${statusHtml} <p>${course.description?.substring(0,100) + '...' || 'No description.'}</p>
+                        <div class="progress-bar-container"><div class="progress-bar" style="width: ${progressPercent.toFixed(0)}%;">${progressPercent.toFixed(0)}%</div></div>
+                        <p>Modules: ${completedCount} / ${totalModules} completed</p> ${btnHtml}`;
+                    enrolledCoursesList.appendChild(card);
                 }
-            } catch (error) {
-                console.error(`Error loading details for enrolled course ${courseId}:`, error);
-            }
+            } catch (error) { console.error(`Error loading enrolled course ${courseId}:`, error); }
         }
     }
 
     function loadAnnouncements(enrolledCoursesData) {
-        // ... (loadAnnouncements logic remains the same) ...
         const announcementsList = document.getElementById('announcements-list');
         if (!announcementsList) return;
         announcementsList.innerHTML = '';
-
         if (!enrolledCoursesData || enrolledCoursesData.length === 0) {
-            announcementsList.innerHTML = '<li>No announcements for your courses.</li>';
-            return;
+            announcementsList.innerHTML = '<li>No announcements for your courses.</li>'; return;
         }
-
-        const enrolledCourseIds = enrolledCoursesData.map(enrollment => enrollment.courseId);
-
+        const enrolledCourseIds = enrolledCoursesData.map(e => e.courseId);
         const announcementsDbRef = query(ref(db, 'announcements'), orderByChild('timestamp'));
         onValue(announcementsDbRef, (snapshot) => {
-            const allAnnouncements = snapshot.val();
-            let userAnnouncementsFound = false;
             announcementsList.innerHTML = '';
-            if (allAnnouncements) {
-                const announcementKeys = Object.keys(allAnnouncements).sort((a,b) => allAnnouncements[b].timestamp - allAnnouncements[a].timestamp);
-
-                announcementKeys.forEach(key => {
-                    const announcement = allAnnouncements[key];
-                    if (enrolledCourseIds.includes(announcement.courseId)) {
-                        const listItem = document.createElement('li');
-                        const enrolledCourseInfo = enrolledCoursesData.find(ec => ec.courseId === announcement.courseId);
-                        const courseTitle = enrolledCourseInfo ? enrolledCourseInfo.title : `Course ID: ${announcement.courseId}`;
-
-                        listItem.innerHTML = `
-                            <strong>${new Date(announcement.timestamp).toLocaleDateString()} - ${courseTitle}</strong>:
-                            ${announcement.message}
-                        `;
-                        announcementsList.appendChild(listItem);
-                        userAnnouncementsFound = true;
+            let found = false;
+            if (snapshot.exists()) {
+                const all = []; snapshot.forEach(s => all.push({id:s.key, ...s.val()}));
+                all.sort((a,b) => b.timestamp - a.timestamp).forEach(a => {
+                    if (enrolledCourseIds.includes(a.courseId)) {
+                        const li = document.createElement('li');
+                        const courseInfo = enrolledCoursesData.find(ec => ec.courseId === a.courseId);
+                        li.innerHTML = `<strong>${new Date(a.timestamp).toLocaleDateString()} - ${courseInfo?.title || a.courseId}</strong>: ${a.message}`;
+                        announcementsList.appendChild(li);
+                        found = true;
                     }
                 });
             }
-            if (!userAnnouncementsFound) {
-                announcementsList.innerHTML = '<li>No new announcements for your courses.</li>';
-            }
-        }, (error) => {
-            console.error("Error loading announcements:", error);
-            announcementsList.innerHTML = '<li>Error loading announcements.</li>';
-        });
+            if (!found) announcementsList.innerHTML = '<li>No new announcements for your courses.</li>';
+        }, (error) => { console.error("Error loading announcements:", error); announcementsList.innerHTML = '<li>Error loading.</li>';});
     }
 
-    // New function to check access before loading course details
     async function loadCourseDetailsWithAccessCheck(user) {
         const urlParams = new URLSearchParams(window.location.search);
         const courseId = urlParams.get('id');
         const mainContent = mainContentPages.courseDetail;
-
-        if (!mainContent) return; // Should not happen if on course.html
-
-        if (!courseId) {
-            mainContent.innerHTML = '<p>Course ID not found in URL.</p>';
-            return;
-        }
-
-        if (!user) { // Should be caught by onAuthStateChanged redirect, but good for robustness
-            mainContent.innerHTML = '<p>You must be logged in to view course details.</p>';
-            return;
-        }
-
+        if (!mainContent) return;
+        if (!courseId) { mainContent.innerHTML = '<p>Course ID not found.</p>'; return; }
+        if (!user) { mainContent.innerHTML = '<p>Login required.</p>'; return; }
         try {
-            const userEnrollmentsRef = ref(db, `users/${user.uid}/enrolledCourses`);
-            const enrollmentsSnapshot = await get(userEnrollmentsRef);
+            const enrollmentsSnapshot = await get(ref(db, `users/${user.uid}/enrolledCourses`));
             const enrolledCourses = enrollmentsSnapshot.val() || [];
-
             const currentEnrollment = enrolledCourses.find(ec => ec.courseId === courseId);
-
-            if (currentEnrollment && currentEnrollment.currentStatus === 'active') {
-                if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden'); // Show content area
-                loadCourseDetails(courseId, user.uid); // Proceed to load full details
-            } else if (currentEnrollment && currentEnrollment.currentStatus === 'pending_approval') {
-                mainContent.innerHTML = `<h1>${currentEnrollment.title || 'Course'}</h1><p style="color: orange; font-weight: bold;">Your enrollment for this course is pending approval. You cannot access course materials yet.</p><p><a href="dashboard.html">Go to Dashboard</a></p>`;
-                if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden'); // Show message area
+            if (mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden'); // Show content area first
+            if (currentEnrollment?.currentStatus === 'active') {
+                loadCourseDetails(courseId, user.uid);
+            } else if (currentEnrollment?.currentStatus === 'pending_approval') {
+                mainContent.innerHTML = `<h1>${currentEnrollment.title || 'Course'}</h1><p style="color: orange; font-weight: bold;">Enrollment pending approval.</p>`;
             } else {
-                // Not enrolled or status is not active/pending (e.g. dropped, completed and archived etc.)
-                mainContent.innerHTML = `<p>You are not actively enrolled in this course or your enrollment is not approved. <a href="index.html">Browse courses</a> or check your <a href="dashboard.html">dashboard</a>.</p>`;
-                if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden');
+                mainContent.innerHTML = `<p>Not actively enrolled or approved. <a href="index.html">Browse</a> or check <a href="dashboard.html">dashboard</a>.</p>`;
             }
-        } catch (error) {
-            console.error("Error checking course enrollment status:", error);
-            mainContent.innerHTML = "<p>Error checking your enrollment status. Please try again.</p>";
-            if(mainContentPages.courseDetail) mainContentPages.courseDetail.classList.remove('hidden');
-        }
+        } catch (error) { console.error("Error checking enrollment:", error); mainContent.innerHTML = "<p>Error checking enrollment.</p>"; }
     }
 
-
-    async function loadCourseDetails(courseId, userId) { // This is the original function, now called by loadCourseDetailsWithAccessCheck
-        // ... (loadCourseDetails logic remains the same) ...
+    async function loadCourseDetails(courseId, userId) {
         const courseTitleEl = document.getElementById('course-title');
         const courseSyllabusEl = document.getElementById('course-syllabus');
         const modulesListEl = document.getElementById('modules-list');
         const courseCodeEl = document.getElementById('course-code-display');
         const courseCreditsEl = document.getElementById('course-credits-display');
-        const mainContent = mainContentPages.courseDetail; // Keep for error messages inside
-
-        // No need to check mainContentPages.courseDetail here as loadCourseDetailsWithAccessCheck does it.
-        // if (!courseTitleEl || !courseSyllabusEl || !modulesListEl || !mainContent) return; // Redundant
-
+        const mainContent = mainContentPages.courseDetail;
         try {
             const courseSnapshot = await get(ref(db, 'courses/' + courseId));
             const course = courseSnapshot.val();
-            if (!course) {
-                // This case should ideally be caught by enrollment check, but as a fallback:
-                if(mainContent) mainContent.innerHTML = '<p>Course data not found.</p>';
-                return;
-            }
-
-            courseTitleEl.textContent = course.title || 'N/A';
+            if (!course) { if(mainContent) mainContent.innerHTML = '<p>Course data not found.</p>'; return; }
+            if(courseTitleEl) courseTitleEl.textContent = course.title || 'N/A';
             if(courseCodeEl) courseCodeEl.textContent = course.code || 'N/A';
             if(courseCreditsEl) courseCreditsEl.textContent = course.creditHours !== undefined ? course.creditHours : 'N/A';
-            courseSyllabusEl.textContent = course.description || 'No syllabus provided.';
-            modulesListEl.innerHTML = '';
-
+            if(courseSyllabusEl) courseSyllabusEl.textContent = course.description || 'No syllabus.';
+            if(modulesListEl) modulesListEl.innerHTML = '';
             const progressSnapshot = await get(ref(db, `users/${userId}/progress/${courseId}`));
             const courseProgress = progressSnapshot.val() || { completedModules: [] };
             const completedModules = Array.isArray(courseProgress.completedModules) ? courseProgress.completedModules : [];
-
             if (course.modules && course.modules.length > 0) {
                 course.modules.forEach((module, index) => {
                     const moduleId = module.moduleId || `module-${index}`;
                     const isCompleted = completedModules.includes(moduleId);
-
                     const moduleItem = document.createElement('div');
                     moduleItem.classList.add('module-item');
-                    moduleItem.innerHTML = `
-                        <div>
-                            <h4>${module.title}</h4>
-                            <p>${module.content || 'No content preview.'}</p>
-                        </div>
-                        <div>
-                            <span class="module-status">${isCompleted ? 'Completed' : 'Incomplete'}</span>
-                            <button class="btn btn-secondary mark-complete-btn"
-                                    data-course-id="${courseId}"
-                                    data-module-id="${moduleId}"
-                                    ${isCompleted ? 'disabled' : ''}>
-                                ${isCompleted ? 'Completed' : 'Mark as Complete'}
-                            </button>
-                        </div>
-                    `;
-                    modulesListEl.appendChild(moduleItem);
+                    moduleItem.innerHTML = `<div><h4>${module.title}</h4><p>${module.content || 'No preview.'}</p></div>
+                        <div><span class="module-status">${isCompleted ?'Completed':'Incomplete'}</span>
+                        <button class="btn btn-secondary mark-complete-btn" data-course-id="${courseId}" data-module-id="${moduleId}" ${isCompleted?'disabled':''}>${isCompleted?'Completed':'Mark as Complete'}</button></div>`;
+                    if(modulesListEl) modulesListEl.appendChild(moduleItem);
                 });
-
-                document.querySelectorAll('.mark-complete-btn').forEach(button => {
-                    button.addEventListener('click', () => {
-                        markModuleComplete(userId, button.dataset.courseId, button.dataset.moduleId, button);
-                    });
-                });
-
-            } else {
-                modulesListEl.innerHTML = '<p>No modules available for this course.</p>';
-            }
-
+                document.querySelectorAll('.mark-complete-btn').forEach(b => b.addEventListener('click', () => markModuleComplete(userId, b.dataset.courseId, b.dataset.moduleId, b)));
+            } else { if(modulesListEl) modulesListEl.innerHTML = '<p>No modules.</p>'; }
             await loadCourseAssessments(courseId, userId);
-
-        } catch (error) {
-            console.error("Error loading course details content:", error);
-            if(mainContent) mainContent.innerHTML = '<p>Error loading course details content.</p>';
-        }
-
+        } catch (error) { console.error("Error loading course details:", error); if(mainContent) mainContent.innerHTML = '<p>Error loading details.</p>'; }
         const uploadBtn = document.getElementById('upload-assignment-btn');
-        if(uploadBtn) {
-            uploadBtn.addEventListener('click', () => {
-                alert('Assignment upload simulation: This feature is not fully implemented.');
-            });
-        }
+        if(uploadBtn) uploadBtn.addEventListener('click', () => alert('Upload (simulated).'));
     }
 
     async function loadCourseAssessments(courseId, userId) {
-        // ... (loadCourseAssessments logic remains the same) ...
         const examsListEl = document.getElementById('exams-list');
         const assignmentsListEl = document.getElementById('assignments-list');
-
-        if (!examsListEl || !assignmentsListEl) {
-            console.warn("Assessment list elements not found on this page.");
-            return;
-        }
-
+        if (!examsListEl || !assignmentsListEl) { console.warn("Assessment elements missing."); return; }
         try {
-            const examsSnapshot = await get(ref(db, `courses/${courseId}/exams`));
-            const exams = examsSnapshot.val();
-
-            examsListEl.innerHTML = '';
-            if (exams) {
-                const examsHeader = document.createElement('h3');
-                examsHeader.textContent = 'Exams';
-                examsListEl.appendChild(examsHeader);
-                Object.keys(exams).forEach(examId => {
-                    const exam = exams[examId];
-                    const examItem = document.createElement('div');
-                    examItem.classList.add('assessment-item');
-                    examItem.innerHTML = `
-                        <h4>${exam.title}</h4>
-                        <p><strong>Date:</strong> ${new Date(exam.date).toLocaleDateString()}</p>
-                        <p><strong>Duration:</strong> ${exam.duration} minutes</p>
-                        <p><strong>Weight:</strong> ${exam.weight}% of final grade</p>
-                        <button class="btn exam-btn" data-exam-id="${examId}">View Exam Details</button>
-                    `;
-                    examsListEl.appendChild(examItem);
-                });
-            } else {
-                examsListEl.innerHTML = '<h3>Exams</h3><p>No exams scheduled for this course.</p>';
-            }
-
-            const assignmentsSnapshot = await get(ref(db, `courses/${courseId}/assignments`));
-            const assignments = assignmentsSnapshot.val();
-
-            assignmentsListEl.innerHTML = '';
-            if (assignments) {
-                const assignmentsHeader = document.createElement('h3');
-                assignmentsHeader.textContent = 'Assignments';
-                assignmentsListEl.appendChild(assignmentsHeader);
-                Object.keys(assignments).forEach(assignmentId => {
-                    const assignment = assignments[assignmentId];
-                    const assignmentItem = document.createElement('div');
-                    assignmentItem.classList.add('assessment-item');
-                    assignmentItem.innerHTML = `
-                        <h4>${assignment.title}</h4>
-                        <p><strong>Due:</strong> ${new Date(assignment.dueDate).toLocaleDateString()}</p>
-                        <p><strong>Status:</strong> ${assignment.status || 'Not submitted'}</p>
-                        <button class="btn assignment-btn" data-assignment-id="${assignmentId}">
-                            ${assignment.submitted ? 'View Submission' : 'Submit Assignment'}
-                        </button>
-                    `;
-                    assignmentsListEl.appendChild(assignmentItem);
-                });
-            } else {
-                assignmentsListEl.innerHTML = '<h3>Assignments</h3><p>No assignments for this course yet.</p>';
-            }
-        } catch (error) {
-            console.error("Error loading assessments:", error);
-            if(examsListEl) examsListEl.innerHTML = '<h3>Exams</h3><p>Error loading exams.</p>';
-            if(assignmentsListEl) assignmentsListEl.innerHTML = '<h3>Assignments</h3><p>Error loading assignments.</p>';
-        }
+            const examsSnap = await get(ref(db, `courses/${courseId}/exams`));
+            const exams = examsSnap.val();
+            examsListEl.innerHTML = '<h3>Exams</h3>';
+            if (exams) Object.keys(exams).forEach(id => {
+                const ex = exams[id]; const item = document.createElement('div'); item.classList.add('assessment-item');
+                item.innerHTML = `<h4>${ex.title}</h4><p><strong>Date:</strong> ${new Date(ex.date).toLocaleDateString()}</p><p><strong>Duration:</strong> ${ex.duration} mins</p><p><strong>Weight:</strong> ${ex.weight}%</p><button class="btn exam-btn" data-exam-id="${id}">Details</button>`;
+                examsListEl.appendChild(item);
+            }); else examsListEl.innerHTML += '<p>No exams.</p>';
+            const assignSnap = await get(ref(db, `courses/${courseId}/assignments`));
+            const assigns = assignSnap.val();
+            assignmentsListEl.innerHTML = '<h3>Assignments</h3>';
+            if (assigns) Object.keys(assigns).forEach(id => {
+                const as = assigns[id]; const item = document.createElement('div'); item.classList.add('assessment-item');
+                item.innerHTML = `<h4>${as.title}</h4><p><strong>Due:</strong> ${new Date(as.dueDate).toLocaleDateString()}</p><p><strong>Status:</strong> ${as.status||'Not submitted'}</p><button class="btn" data-id="${id}">${as.submitted?'View Sub':'Submit'}</button>`;
+                assignmentsListEl.appendChild(item);
+            }); else assignmentsListEl.innerHTML += '<p>No assignments.</p>';
+        } catch (e) { console.error("Error loading assessments:", e); examsListEl.innerHTML+='Error.'; assignmentsListEl.innerHTML+='Error.';}
     }
 
     async function markModuleComplete(userId, courseId, moduleId, button) {
-        // ... (markModuleComplete logic remains the same) ...
-        const progressDbRef = ref(db, `users/${userId}/progress/${courseId}/completedModules`);
+        const progRef = ref(db, `users/${userId}/progress/${courseId}/completedModules`);
         try {
-            const snapshot = await get(progressDbRef);
-            let completedModules = snapshot.val() || [];
-            if (!Array.isArray(completedModules)) completedModules = [];
-
-            if (!completedModules.includes(moduleId)) {
-                completedModules.push(moduleId);
-                await set(progressDbRef, completedModules);
-
-                console.log(`Module ${moduleId} for course ${courseId} marked as complete for user ${userId}.`);
-                if (button) {
-                    button.textContent = 'Completed';
-                    button.disabled = true;
-                    const statusEl = button.parentElement.querySelector('.module-status');
-                    if(statusEl) statusEl.textContent = 'Completed';
-                }
-
-                if (window.location.pathname.endsWith('dashboard.html')) {
-                     const currentUser = auth.currentUser;
-                     if(currentUser) loadUserData(currentUser);
-                }
+            const snap = await get(progRef); let completed = snap.val() || [];
+            if (!Array.isArray(completed)) completed = [];
+            if (!completed.includes(moduleId)) {
+                completed.push(moduleId); await set(progRef, completed);
+                if (button) { button.textContent = 'Completed'; button.disabled = true;
+                              button.parentElement.querySelector('.module-status').textContent = 'Completed'; }
+                if (window.location.pathname.endsWith('dashboard.html') && auth.currentUser) loadUserData(auth.currentUser);
             }
-        } catch (error) {
-            console.error("Error marking module complete:", error);
-            alert(`Error: ${error.message}`);
-        }
+        } catch (e) { console.error("Error marking module complete:", e); alert(`Error: ${e.message}`); }
     }
 
-    // --- Admin Page Specific Logic (within initializeAdminPage) ---
-    function initializeAdminPage() {
-        // ... (initializeAdminPage with createCourseForm listener remains the same) ...
+    // --- Admin Page Specific Logic ---
+    function initializeAdminPageLogic(adminUser) { // Renamed and accepts user
         const createCourseForm = document.getElementById('create-course-form');
         const createCourseMessageEl = document.getElementById('create-course-message');
-
         if (createCourseForm) {
             createCourseForm.addEventListener('submit', async (e) => {
-                e.preventDefault();
-                if(createCourseMessageEl) createCourseMessageEl.textContent = '';
-
-                const title = document.getElementById('course-title-input').value;
-                const code = document.getElementById('course-code-input').value;
-                const description = document.getElementById('course-description-input').value;
-                const creditHours = parseFloat(document.getElementById('course-credits-input').value);
-                const moduleTitlesRaw = document.getElementById('course-modules-input').value;
-
-                if (!title || !code || !description || isNaN(creditHours)) {
-                    if(createCourseMessageEl) createCourseMessageEl.textContent = 'Please fill all required fields correctly.';
-                    if(createCourseMessageEl) createCourseMessageEl.style.color = 'var(--mit-red)';
+                e.preventDefault(); if(createCourseMessageEl) createCourseMessageEl.textContent = '';
+                const data = {
+                    title: document.getElementById('course-title-input').value,
+                    code: document.getElementById('course-code-input').value,
+                    description: document.getElementById('course-description-input').value,
+                    creditHours: parseFloat(document.getElementById('course-credits-input').value),
+                    moduleTitlesRaw: document.getElementById('course-modules-input').value
+                };
+                if (!data.title || !data.code || !data.description || isNaN(data.creditHours)) {
+                    if(createCourseMessageEl) { createCourseMessageEl.textContent = 'Fill required fields.'; createCourseMessageEl.style.color = 'var(--mit-red)';}
                     return;
                 }
-
-                const moduleTitles = moduleTitlesRaw.split('\n').filter(t => t.trim() !== '').map(t => t.trim());
-                const modules = moduleTitles.map((title, index) => ({
-                    moduleId: `module-${index}`,
-                    title: title,
-                    content: ""
-                }));
-
-                const coursesRefPath = ref(db, 'courses');
-                const newCourseRef = push(coursesRefPath);
-
-                const newCourseData = {
-                    title: title, code: code, description: description, creditHours: creditHours,
-                    modules: modules, instructor: "", department: "", level: "", term: "",
-                    exams: {}, assignments: {}, createdAt: Date.now(),
-                };
-
+                const modules = data.moduleTitlesRaw.split('\n').filter(t => t.trim() !== '').map((title, i) => ({ moduleId: `module-${i}`, title: title, content: "" }));
+                const newCourseRef = push(ref(db, 'courses'));
+                const newCourseData = { ...data, modules, instructor: "", department: "", level: "", term: "", exams: {}, assignments: {}, createdAt: Date.now(), createdBy: adminUser.uid };
+                delete newCourseData.moduleTitlesRaw; // Don't save raw input
                 try {
                     await set(newCourseRef, newCourseData);
-                    if(createCourseMessageEl) {
-                        createCourseMessageEl.textContent = 'Course created successfully!';
-                        createCourseMessageEl.style.color = 'green';
-                    }
+                    if(createCourseMessageEl) { createCourseMessageEl.textContent = 'Course created!'; createCourseMessageEl.style.color = 'green';}
                     createCourseForm.reset();
-                } catch (error) {
-                    console.error("Error creating course:", error);
-                    if(createCourseMessageEl) {
-                        createCourseMessageEl.textContent = `Error creating course: ${error.message}`;
-                        createCourseMessageEl.style.color = 'var(--mit-red)';
-                    }
-                }
+                } catch (err) { console.error("Error creating course:", err); if(createCourseMessageEl){createCourseMessageEl.textContent = `Error: ${err.message}`; createCourseMessageEl.style.color = 'var(--mit-red)';}}
             });
         }
 
@@ -991,213 +719,150 @@ document.addEventListener('DOMContentLoaded', async () => {
         let allUsersData = {};
 
         async function loadAllUsersForAdmin() {
-            // ... (loadAllUsersForAdmin logic remains the same) ...
             if (!adminUserSelect) return;
-            adminUserSelect.innerHTML = '<option value="">Loading users...</option>';
+            adminUserSelect.innerHTML = '<option value="">Loading...</option>';
             try {
                 const usersSnapshot = await get(ref(db, 'users'));
                 allUsersData = usersSnapshot.val();
-                adminUserSelect.innerHTML = '<option value="">-- Select a User --</option>';
-                if (allUsersData) {
-                    for (const userId in allUsersData) {
-                        const userData = allUsersData[userId];
-                        const option = document.createElement('option');
-                        option.value = userId;
-                        option.textContent = `${userData.displayName} (${userData.email})`;
-                        adminUserSelect.appendChild(option);
-                    }
-                } else {
-                    adminUserSelect.innerHTML = '<option value="">No users found.</option>';
-                }
-            } catch (error) {
-                console.error("Error loading users for admin:", error);
-                adminUserSelect.innerHTML = '<option value="">Error loading users.</option>';
-            }
+                adminUserSelect.innerHTML = '<option value="">-- Select User --</option>';
+                if (allUsersData) for (const uid in allUsersData) {
+                    const u = allUsersData[uid];
+                    const opt = document.createElement('option'); opt.value = uid;
+                    opt.textContent = `${u.displayName} (${u.email})`; adminUserSelect.appendChild(opt);
+                } else adminUserSelect.innerHTML = '<option value="">No users.</option>';
+            } catch (e) { console.error("Error loading users for admin:", e); adminUserSelect.innerHTML = '<option value="">Error.</option>';}
         }
 
         async function displayUserDetailsForAdmin(userId) {
-            // ... (displayUserDetailsForAdmin logic for fees and enrollments remains the same) ...
             if (!adminSelectedUserDetailsDiv || !userId || !allUsersData[userId]) {
-                if(adminSelectedUserDetailsDiv) adminSelectedUserDetailsDiv.classList.add('hidden');
-                return;
+                if(adminSelectedUserDetailsDiv) adminSelectedUserDetailsDiv.classList.add('hidden'); return;
             }
             const userData = allUsersData[userId];
-
             if(adminSelectedUserNameEl) adminSelectedUserNameEl.textContent = `Managing: ${userData.displayName}`;
-            if(adminSelectedUserFeesEl) {
-                if (userData.feesBalance) {
-                    adminSelectedUserFeesEl.textContent = `${userData.feesBalance.currency} ${userData.feesBalance.amount.toLocaleString()}`;
-                } else {
-                    adminSelectedUserFeesEl.textContent = 'N/A (Default MWK 27,500 will be set if updated)';
-                }
-            }
-            if(adminNewFeesAmountInput && userData.feesBalance) adminNewFeesAmountInput.value = userData.feesBalance.amount;
-            else if(adminNewFeesAmountInput) adminNewFeesAmountInput.value = '';
-            if(adminNewFeesCurrencyInput && userData.feesBalance) adminNewFeesCurrencyInput.value = userData.feesBalance.currency;
-            else if(adminNewFeesCurrencyInput) adminNewFeesCurrencyInput.value = 'MWK';
-
+            if(adminSelectedUserFeesEl) adminSelectedUserFeesEl.textContent = userData.feesBalance ? `${userData.feesBalance.currency} ${userData.feesBalance.amount.toLocaleString()}` : 'N/A';
+            if(adminNewFeesAmountInput) adminNewFeesAmountInput.value = userData.feesBalance?.amount || '';
+            if(adminNewFeesCurrencyInput) adminNewFeesCurrencyInput.value = userData.feesBalance?.currency || 'MWK';
 
             if(adminPendingEnrollmentsDiv) {
-                adminPendingEnrollmentsDiv.innerHTML = '<p>Loading pending enrollments...</p>';
-                const enrolledCourses = userData.enrolledCourses || [];
-                const pendingEnrollments = enrolledCourses.filter(ec => ec.currentStatus === 'pending_approval');
-
-                if (pendingEnrollments.length > 0) {
-                    adminPendingEnrollmentsDiv.innerHTML = '<h5>Pending Course Approvals:</h5>';
-                    const ul = document.createElement('ul');
-                    ul.style.listStyleType = 'none';
-                    ul.style.paddingLeft = '0';
-                    pendingEnrollments.forEach(enrollment => {
-                        const li = document.createElement('li');
-                        li.style.marginBottom = '10px';
-                        li.innerHTML = `
-                            <span>${enrollment.title || enrollment.courseId}</span>
-                            <button class="btn btn-secondary btn-sm approve-enrollment-btn" data-course-id="${enrollment.courseId}" style="margin-left: 10px; padding: 5px 10px; font-size: 0.8em;">Approve</button>
-                        `;
+                adminPendingEnrollmentsDiv.innerHTML = '<p>Loading enrollments...</p>';
+                const enrolled = userData.enrolledCourses || [];
+                const pending = enrolled.filter(ec => ec.currentStatus === 'pending_approval');
+                if (pending.length > 0) {
+                    adminPendingEnrollmentsDiv.innerHTML = '<h5>Pending Approvals:</h5>'; const ul = document.createElement('ul'); ul.style.cssText = 'list-style:none;padding:0;';
+                    pending.forEach(enr => {
+                        const li = document.createElement('li'); li.style.marginBottom='10px';
+                        li.innerHTML = `<span>${enr.title || enr.courseId}</span> <button class="btn btn-sm approve-enrollment-btn" data-course-id="${enr.courseId}" style="margin-left:10px;padding:5px 10px;font-size:0.8em;">Approve</button>`;
                         ul.appendChild(li);
                     });
                     adminPendingEnrollmentsDiv.appendChild(ul);
-
-                    document.querySelectorAll('.approve-enrollment-btn').forEach(button => {
-                        button.addEventListener('click', async () => {
-                            const courseIdToApprove = button.dataset.courseId;
-                            await approveCourseEnrollment(userId, courseIdToApprove);
-                            displayUserDetailsForAdmin(userId);
-                        });
-                    });
-
-                } else {
-                    adminPendingEnrollmentsDiv.innerHTML = '<p>No pending course enrollments for this user.</p>';
-                }
+                    adminPendingEnrollmentsDiv.querySelectorAll('.approve-enrollment-btn').forEach(b => b.addEventListener('click', async () => {
+                        await approveCourseEnrollment(userId, b.dataset.courseId); displayUserDetailsForAdmin(userId);
+                    }));
+                } else adminPendingEnrollmentsDiv.innerHTML = '<p>No pending enrollments.</p>';
             }
             if(adminSelectedUserDetailsDiv) adminSelectedUserDetailsDiv.classList.remove('hidden');
         }
 
-        if(adminUserSelect) {
-            adminUserSelect.addEventListener('change', () => {
-                const selectedUserId = adminUserSelect.value;
-                if (selectedUserId) {
-                    displayUserDetailsForAdmin(selectedUserId);
-                } else {
-                    if(adminSelectedUserDetailsDiv) adminSelectedUserDetailsDiv.classList.add('hidden');
-                }
-            });
-        }
+        if(adminUserSelect) adminUserSelect.addEventListener('change', () => {
+            const uid = adminUserSelect.value; uid ? displayUserDetailsForAdmin(uid) : adminSelectedUserDetailsDiv.classList.add('hidden');
+        });
 
-        if(adminUpdateFeesBtn) {
-            adminUpdateFeesBtn.addEventListener('click', async () => {
-                // ... (update fees button logic remains the same) ...
-                const selectedUserId = adminUserSelect.value;
-                if (!selectedUserId) {
-                    if(adminUpdateFeesMessageEl) adminUpdateFeesMessageEl.textContent = "Please select a user first.";
-                    return;
-                }
-                const newAmount = parseFloat(adminNewFeesAmountInput.value);
-                const newCurrency = adminNewFeesCurrencyInput.value || "MWK";
+        if(adminUpdateFeesBtn) adminUpdateFeesBtn.addEventListener('click', async () => {
+            const uid = adminUserSelect.value; if (!uid) { if(adminUpdateFeesMessageEl) adminUpdateFeesMessageEl.textContent = "Select user."; return; }
+            const amt = parseFloat(adminNewFeesAmountInput.value); const cur = adminNewFeesCurrencyInput.value || "MWK";
+            if (isNaN(amt)) { if(adminUpdateFeesMessageEl) adminUpdateFeesMessageEl.textContent = "Valid amount needed."; return; }
+            try {
+                await set(ref(db, `users/${uid}/feesBalance`), { amount: amt, currency: cur });
+                if(adminUpdateFeesMessageEl) { adminUpdateFeesMessageEl.textContent = "Fees updated!"; adminUpdateFeesMessageEl.style.color = 'green';}
+                if(adminSelectedUserFeesEl) adminSelectedUserFeesEl.textContent = `${cur} ${amt.toLocaleString()}`;
+                if(allUsersData[uid]) allUsersData[uid].feesBalance = { amount: amt, currency: cur };
+            } catch (e) { console.error("Error updating fees:", e); if(adminUpdateFeesMessageEl){ adminUpdateFeesMessageEl.textContent = `Error: ${e.message}`; adminUpdateFeesMessageEl.style.color = 'var(--mit-red)';}}
+        });
 
-                if (isNaN(newAmount)) {
-                    if(adminUpdateFeesMessageEl) adminUpdateFeesMessageEl.textContent = "Please enter a valid amount.";
-                    return;
-                }
+        // Platform Update/Announcement Posting
+        const platformUpdateForm = document.getElementById('platform-update-form');
+        const platformUpdateMessageInput = document.getElementById('platform-update-message');
+        const platformUpdateStatusEl = document.getElementById('platform-update-status');
+
+        if (platformUpdateForm && platformUpdateMessageInput && platformUpdateStatusEl) {
+            platformUpdateForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const message = platformUpdateMessageInput.value.trim();
+                if (!message) { platformUpdateStatusEl.textContent = "Message empty."; platformUpdateStatusEl.style.color = 'var(--mit-red)'; return; }
+                const currentUser = auth.currentUser;
+                if (!currentUser) { platformUpdateStatusEl.textContent = "Not authenticated."; platformUpdateStatusEl.style.color = 'var(--mit-red)'; return; }
+                let authorDisplayName = allUsersData[currentUser.uid]?.displayName || "Admin";
+                const announcementData = { message, timestamp: Date.now(), postedBy: currentUser.uid, authorName: authorDisplayName };
                 try {
-                    const feesRef = ref(db, `users/${selectedUserId}/feesBalance`);
-                    await set(feesRef, { amount: newAmount, currency: newCurrency });
-                    if(adminUpdateFeesMessageEl) {
-                        adminUpdateFeesMessageEl.textContent = "Fees updated successfully!";
-                        adminUpdateFeesMessageEl.style.color = 'green';
-                    }
-                    if(adminSelectedUserFeesEl) adminSelectedUserFeesEl.textContent = `${newCurrency} ${newAmount.toLocaleString()}`;
-                    if(allUsersData[selectedUserId]) allUsersData[selectedUserId].feesBalance = { amount: newAmount, currency: newCurrency };
-
-                } catch (error) {
-                    console.error("Error updating fees:", error);
-                     if(adminUpdateFeesMessageEl) {
-                        adminUpdateFeesMessageEl.textContent = `Error updating fees: ${error.message}`;
-                        adminUpdateFeesMessageEl.style.color = 'var(--mit-red)';
-                    }
-                }
+                    await push(ref(db, 'platformAnnouncements'), announcementData);
+                    platformUpdateStatusEl.textContent = "Update posted!"; platformUpdateStatusEl.style.color = 'green';
+                    platformUpdateMessageInput.value = '';
+                } catch (error) { console.error("Error posting platform update:", error); platformUpdateStatusEl.textContent = `Error: ${error.message}`; platformUpdateStatusEl.style.color = 'var(--mit-red)';}
             });
         }
-
-        loadAllUsersForAdmin();
+        loadAllUsersForAdmin(); // Initial call
     }
 
     async function approveCourseEnrollment(userId, courseIdToApprove) {
-        // ... (approveCourseEnrollment logic remains the same) ...
         const userEnrollmentsRef = ref(db, `users/${userId}/enrolledCourses`);
         try {
             const snapshot = await get(userEnrollmentsRef);
             let enrolledCourses = snapshot.val() || [];
             if (!Array.isArray(enrolledCourses)) enrolledCourses = [];
-
             const courseIndex = enrolledCourses.findIndex(ec => ec.courseId === courseIdToApprove && ec.currentStatus === 'pending_approval');
-
             if (courseIndex > -1) {
                 enrolledCourses[courseIndex].currentStatus = 'active';
                 enrolledCourses[courseIndex].lastAccessed = Date.now();
                 await set(userEnrollmentsRef, enrolledCourses);
-                console.log(`Enrollment for course ${courseIdToApprove} approved for user ${userId}.`);
-                alert(`Enrollment for course ${courseIdToApprove} approved.`);
-            } else {
-                console.warn(`Could not find pending enrollment for course ${courseIdToApprove} for user ${userId}.`);
-                alert(`Could not find pending enrollment for course ${courseIdToApprove}. It might have been already approved or does not exist.`);
-            }
-        } catch (error) {
-            console.error("Error approving enrollment:", error);
-            alert(`Error approving enrollment: ${error.message}`);
-        }
+                alert(`Enrollment for ${enrolledCourses[courseIndex].title || courseIdToApprove} approved.`);
+            } else { alert(`Could not find pending enrollment for ${courseIdToApprove}.`); }
+        } catch (e) { console.error("Error approving enrollment:", e); alert(`Error: ${e.message}`); }
+    }
+
+    // --- Platform News Display ---
+    async function loadPlatformNews() {
+        const el = document.getElementById('platform-news-list'); if (!el) return;
+        el.innerHTML = '<li>Loading...</li>';
+        try {
+            const newsQuery = query(ref(db, 'platformAnnouncements'), orderByChild('timestamp'), limitToLast(10));
+            onValue(newsQuery, (snap) => {
+                el.innerHTML = '';
+                if (snap.exists()) {
+                    const items = []; snap.forEach(s => items.push({ id:s.key, ...s.val() }));
+                    items.reverse().forEach(item => { // Newest first
+                        const li = document.createElement('li');
+                        li.innerHTML = `<strong>${item.authorName || 'Admin'}</strong> (${new Date(item.timestamp).toLocaleString()}):<br>${item.message.replace(/\n/g, '<br>')}`;
+                        el.appendChild(li);
+                    });
+                } else el.innerHTML = '<li>No platform news.</li>';
+            }, (err) => { console.error("Error loading platform news:", err); el.innerHTML = '<li>Error loading.</li>';});
+        } catch (e) { console.error("Error setting up news listener:", e); el.innerHTML = '<li>Error.</li>';}
     }
 
     async function ensureSampleDataIsPopulated() {
-        // ... (ensureSampleDataIsPopulated logic remains the same) ...
         try {
             const coursesSnapshot = await get(ref(db, 'courses'));
             if (!coursesSnapshot.exists() || !coursesSnapshot.val()) {
-                console.info("No existing course data found. Populating sample data...");
-                await addSampleCourses();
-                await addSampleAnnouncements();
-                console.info("Sample data automatically populated.");
-            } else {
-                console.info("Sample data check: Course data already exists.");
-            }
-        } catch (error) {
-            console.error("Error during sample data check/population:", error);
-        }
+                console.info("No existing course data. Populating sample data...");
+                await addSampleCourses(); await addSampleAnnouncements();
+                console.info("Sample data populated.");
+            } else console.info("Sample data check: Course data exists.");
+        } catch (e) { console.error("Error during sample data check/population:", e); }
     }
 
-    // Initial Page Load Logic
-    if (window.location.pathname.endsWith('admin.html')) {
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                const userDbRef = ref(db, 'users/' + user.uid);
-                get(userDbRef).then(snapshot => {
-                    const userData = snapshot.val();
-                    if (!userData || (userData.role !== 'admin' && userData.role !== 'faculty')) {
-                        window.location.href = 'index.html';
-                    } else {
-                        initializeAdminPage();
-                    }
-                }).catch(() => window.location.href = 'index.html');
-            } else {
-                window.location.href = 'index.html';
-            }
-        });
-    } else if (window.location.pathname.endsWith('course.html')) {
-        onAuthStateChanged(auth, user => {
-            if(user) {
-                loadCourseDetailsWithAccessCheck(user);
-            } else {
-                // if not logged in and trying to access course page, redirect
-                const mainContent = mainContentPages.courseDetail;
-                if(mainContent) mainContent.innerHTML = '<p>You must be logged in to view course details. Redirecting...</p>';
-                setTimeout(() => window.location.href = 'index.html', 2000);
-            }
-        });
-    } else { // For index.html, dashboard.html, profile.html
-         onAuthStateChanged(auth, user => { // This will trigger loadUserData if user is present
-            // Handled by the main onAuthStateChanged listener
-         });
+    // Initial Page Load Logic & Route specific initializations
+    // Main onAuthStateChanged listener handles calling loadUserData, which then calls page-specific loads.
+    // Specific page initializations that *only* run on that page and *require auth* go into their respective if blocks.
+    const currentPagePath = window.location.pathname.split("/").pop();
+
+    if (currentPagePath === 'admin.html') {
+        // Protection is handled by the main onAuthStateChanged -> loadUserData -> admin nav link visibility
+        // and then specific call to initializeAdminPageLogic if role is correct.
+        // The initializeAdminPageLogic itself should be called after user data (and thus role) is confirmed.
+    } else if (currentPagePath === 'chat.html') {
+        // Chat page initialization is now inside the main onAuthStateChanged
     }
+    // Other pages like index, dashboard, profile, course are handled by loadUserData and subsequent calls.
 
 
     if (auth && db) {

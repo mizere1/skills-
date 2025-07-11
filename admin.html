@@ -63,6 +63,7 @@
                 <li><a href="index.html">Home</a></li>
                 <li><a href="dashboard.html">My Courses</a></li>
                 <li><a href="profile.html">Profile</a></li>
+                <li id="student-chat-nav-link" class="hidden"><a href="chat.html">Student Chat</a></li>
                 <li id="admin-nav-link" class="hidden"><a href="admin.html">Admin</a></li>
                 <li id="auth-status"><a href="#" id="login-logout">Login</a></li>
             </ul>
@@ -130,6 +131,18 @@
                     <p>Select a user to see pending enrollments.</p>
                 </div>
             </div>
+        </section>
+
+        <section id="platform-announcements-section" class="form-section">
+            <h2>Post Platform Update/Announcement</h2>
+            <form id="platform-update-form">
+                <div>
+                    <label for="platform-update-message">Message:</label>
+                    <textarea id="platform-update-message" rows="4" required></textarea>
+                </div>
+                <button type="submit" class="btn">Post Platform Update</button>
+            </form>
+            <p id="platform-update-status" style="margin-top: 1em;"></p>
         </section>
 
         <!-- This section can be re-enabled later if needed for just listing courses -->
