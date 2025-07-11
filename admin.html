@@ -96,6 +96,13 @@
                     <label for="course-modules">Module Titles (one title per line):</label>
                     <textarea id="course-modules-input" placeholder="Introduction to Topic A\nAdvanced Topic B\nPractical Applications"></textarea>
                 </div>
+                <div>
+                    <label for="course-creation-term-select">Assign to Academic Term:</label>
+                    <select id="course-creation-term-select" required>
+                        <option value="">-- Select Term --</option>
+                        <!-- Terms will be populated by JavaScript -->
+                    </select>
+                </div>
                 <button type="submit" class="btn">Create Course</button>
             </form>
             <p id="create-course-message" style="margin-top: 1em;"></p>
@@ -143,6 +150,47 @@
                 <button type="submit" class="btn">Post Platform Update</button>
             </form>
             <p id="platform-update-status" style="margin-top: 1em;"></p>
+        </section>
+
+        <section id="academic-term-management-section" class="form-section">
+            <h2>Academic Term Management</h2>
+            <form id="create-term-form">
+                <div>
+                    <label for="term-name">Term Name:</label>
+                    <input type="text" id="term-name" placeholder="e.g., Fall 2024" required>
+                </div>
+                <div>
+                    <label for="term-year">Year:</label>
+                    <input type="number" id="term-year" placeholder="e.g., 2024" min="2000" max="2100" required>
+                </div>
+                <div>
+                    <label for="term-type">Type:</label>
+                    <select id="term-type" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="Fall">Fall</option>
+                        <option value="Spring">Spring</option>
+                        <option value="Summer">Summer</option>
+                        <option value="Winter">Winter</option>
+                        <option value="FullYear">Full Year</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="term-start-date">Start Date:</label>
+                    <input type="date" id="term-start-date" required>
+                </div>
+                <div>
+                    <label for="term-end-date">End Date:</label>
+                    <input type="date" id="term-end-date" required>
+                </div>
+                <button type="submit" class="btn">Create Academic Term</button>
+            </form>
+            <p id="term-create-status" style="margin-top: 1em;"></p>
+
+            <h3>Existing Academic Terms</h3>
+            <ul id="existing-terms-list" style="list-style-type: none; padding-left: 0;">
+                <li>Loading terms...</li>
+            </ul>
         </section>
 
         <!-- This section can be re-enabled later if needed for just listing courses -->
