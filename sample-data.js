@@ -33,12 +33,14 @@ async function addSampleCourses() {
             "department": "Electrical Engineering and Computer Science",
             "level": "Undergraduate",
             "term": "Fall 2023",
-            "credits": 12,
+            "credits": 12, // Assuming this is the same as creditHours for now
+            "code": "CS101", // Added field
+            "creditHours": 12, // Added field
             "modules": [
-                { "moduleId": "m1", "title": "Introduction and Python Basics", "content": "Overview of computation, Python programs, variables, expressions, and statements." },
-                { "moduleId": "m2", "title": "Branching and Iteration", "content": "Conditionals, loops, and iteration in Python." },
-                { "moduleId": "m3", "title": "Data Structures", "content": "Strings, lists, tuples, and dictionaries in Python." },
-                { "moduleId": "m4", "title": "Functions and Recursion", "content": "Defining and using functions, recursion, and scope." }
+                { "moduleId": "module-0", "title": "Introduction and Python Basics", "content": "Overview of computation, Python programs, variables, expressions, and statements." },
+                { "moduleId": "module-1", "title": "Branching and Iteration", "content": "Conditionals, loops, and iteration in Python." },
+                { "moduleId": "module-2", "title": "Data Structures", "content": "Strings, lists, tuples, and dictionaries in Python." },
+                { "moduleId": "module-3", "title": "Functions and Recursion", "content": "Defining and using functions, recursion, and scope." }
             ],
             "exams": {
                 "exam1": {
@@ -78,12 +80,14 @@ async function addSampleCourses() {
             "department": "Electrical Engineering and Computer Science",
             "level": "Undergraduate",
             "term": "Spring 2024",
-            "credits": 12,
+            "credits": 12, // Assuming this is the same as creditHours for now
+            "code": "CS202", // Added field
+            "creditHours": 12, // Added field
             "modules": [
-                { "moduleId": "m1", "title": "Analysis of Algorithms", "content": "Asymptotic notation, recurrences, and master theorem." },
-                { "moduleId": "m2", "title": "Sorting and Searching", "content": "Merge sort, quicksort, heapsort, binary search trees." },
-                { "moduleId": "m3", "title": "Graph Algorithms", "content": "BFS, DFS, shortest paths, minimum spanning trees." },
-                { "moduleId": "m4", "title": "Dynamic Programming", "content": "Principles of dynamic programming, common problems." }
+                { "moduleId": "module-0", "title": "Analysis of Algorithms", "content": "Asymptotic notation, recurrences, and master theorem." },
+                { "moduleId": "module-1", "title": "Sorting and Searching", "content": "Merge sort, quicksort, heapsort, binary search trees." },
+                { "moduleId": "module-2", "title": "Graph Algorithms", "content": "BFS, DFS, shortest paths, minimum spanning trees." },
+                { "moduleId": "module-3", "title": "Dynamic Programming", "content": "Principles of dynamic programming, common problems." }
             ],
             "exams": {
                 "exam1": {

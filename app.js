@@ -327,11 +327,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 // General elements present on multiple pages or profile page
                 const userNameEl = document.getElementById('user-name');
                 const userEmailEl = document.getElementById('user-email');
-                const userRoleEl = document.getElementById('user-role');
+                const userRoleEl = document.getElementById('user-role'); // This is the one on profile.html
+                const adminNavLink = document.getElementById('admin-nav-link');
+
 
                 if (userNameEl) userNameEl.textContent = userData.displayName || 'N/A';
                 if (userEmailEl) userEmailEl.textContent = userData.email || 'N/A';
-                if (userRoleEl) userRoleEl.textContent = userData.role || 'N/A';
+
+                // Explicitly populate role on profile page if the element exists
+                if (userRoleEl && window.location.pathname.endsWith('profile.html')) {
+                    userRoleEl.textContent = userData.role || 'N/A';
+                } else if (userRoleEl) { // If it's not profile page but element exists (e.g. placeholder in nav)
+                    userRoleEl.textContent = userData.role || 'N/A'; // Or handle differently if needed
+                }
+
+
+                // Show/Hide Admin Nav Link based on role
+                if (adminNavLink) {
+                    if (userData.role === 'admin' || userData.role === 'faculty') {
+                        adminNavLink.classList.remove('hidden');
+                    } else {
+                        adminNavLink.classList.add('hidden');
+                    }
+                }
 
                 // Profile page specific elements
                 if (window.location.pathname.endsWith('profile.html')) {
@@ -483,23 +501,28 @@ document.addEventListener('DOMContentLoaded', () => {
             if (courses) {
                 const userEnrolledCoursesRef = ref(db, 'users/' + currentUserId + '/enrolledCourses');
                 const enrolledSnapshot = await get(userEnrolledCoursesRef);
-                const enrolledCourseIds = enrolledSnapshot.val() || [];
+                const enrolledCourseObjects = enrolledSnapshot.val() || []; // This is now an array of objects
 
                 for (const courseId in courses) {
                     const course = courses[courseId];
+                    // Check if user is enrolled by looking for courseId in the array of enrollment objects
+                    const isEnrolled = enrolledCourseObjects.some(ec => ec.courseId === courseId);
+
                     const courseCard = document.createElement('div');
                     courseCard.classList.add('course-card');
                     courseCard.innerHTML = `
                         <h3>${course.title}</h3>
-                        <p>${course.description}</p>
-                        <button class="btn enroll-btn" data-course-id="${courseId}" ${enrolledCourseIds.includes(courseId) ? 'disabled' : ''}>
-                            ${enrolledCourseIds.includes(courseId) ? 'Enrolled' : 'Enroll'}
+                        <p><strong>Code:</strong> ${course.code || 'N/A'}</p>
+                        <p><strong>Credits:</strong> ${course.creditHours || 'N/A'}</p>
+                        <p>${course.description ? course.description.substring(0,150) + '...' : 'No description available.'}</p>
+                        <button class="btn enroll-btn" data-course-id="${courseId}" ${isEnrolled ? 'disabled' : ''}>
+                            ${isEnrolled ? 'Enrolled' : 'Enroll'}
                         </button>
                     `;
                     coursesContainer.appendChild(courseCard);
                 }
                 // Add event listeners to new enroll buttons
-                document.querySelectorAll('.enroll-btn').forEach(button => {
+                document.querySelectorAll('.enroll-btn:not([disabled])').forEach(button => {
                     button.addEventListener('click', () => enrollInCourse(currentUserId, button.dataset.courseId, button));
                 });
             } else {
@@ -673,6 +696,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const courseTitleEl = document.getElementById('course-title');
         const courseSyllabusEl = document.getElementById('course-syllabus');
         const modulesListEl = document.getElementById('modules-list');
+        const courseCodeEl = document.getElementById('course-code-display'); // Assuming you add this span
+        const courseCreditsEl = document.getElementById('course-credits-display'); // Assuming you add this span
         const mainContent = mainContentPages.courseDetail;
 
         if (!courseTitleEl || !courseSyllabusEl || !modulesListEl || !mainContent) return;
@@ -685,8 +710,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            courseTitleEl.textContent = course.title;
-            courseSyllabusEl.textContent = course.description; // Using description as syllabus for simplicity
+            courseTitleEl.textContent = course.title || 'N/A';
+            if(courseCodeEl) courseCodeEl.textContent = course.code || 'N/A';
+            if(courseCreditsEl) courseCreditsEl.textContent = course.creditHours !== undefined ? course.creditHours : 'N/A';
+            courseSyllabusEl.textContent = course.description || 'No syllabus provided.'; // Using description as syllabus for simplicity
             modulesListEl.innerHTML = ''; // Clear previous modules
 
             const progressSnapshot = await get(ref(db, `users/${userId}/progress/${courseId}`));
@@ -858,5 +885,112 @@ document.addEventListener('DOMContentLoaded', () => {
              if (welcomeMessage) welcomeMessage.classList.remove('hidden');
         }
     }
+
+    // --- Admin Page Specific Logic ---
+    if (window.location.pathname.endsWith('admin.html')) {
+        // Protect admin page
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                const userDbRef = ref(db, 'users/' + user.uid);
+                get(userDbRef).then(snapshot => {
+                    const userData = snapshot.val();
+                    if (!userData || (userData.role !== 'admin' && userData.role !== 'faculty')) {
+                        console.warn('User is not admin/faculty. Redirecting.');
+                        window.location.href = 'index.html';
+                    } else {
+                        // User is admin/faculty, allow access
+                        console.log('Admin/Faculty user accessed admin page.');
+                        initializeAdminPage();
+                    }
+                }).catch(error => {
+                    console.error("Error fetching user role for admin page:", error);
+                    window.location.href = 'index.html';
+                });
+            } else {
+                // Not logged in
+                console.warn('User not logged in. Redirecting from admin page.');
+                window.location.href = 'index.html';
+            }
+        });
+    }
+
+    function initializeAdminPage() {
+        const createCourseForm = document.getElementById('create-course-form');
+        const createCourseMessageEl = document.getElementById('create-course-message');
+
+        if (createCourseForm) {
+            createCourseForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                if(createCourseMessageEl) createCourseMessageEl.textContent = '';
+
+                const title = document.getElementById('course-title-input').value;
+                const code = document.getElementById('course-code-input').value;
+                const description = document.getElementById('course-description-input').value;
+                const creditHours = parseFloat(document.getElementById('course-credits-input').value);
+                const moduleTitlesRaw = document.getElementById('course-modules-input').value;
+
+                if (!title || !code || !description || isNaN(creditHours)) {
+                    if(createCourseMessageEl) createCourseMessageEl.textContent = 'Please fill all required fields correctly.';
+                    if(createCourseMessageEl) createCourseMessageEl.style.color = 'var(--mit-red)';
+                    return;
+                }
+
+                const moduleTitles = moduleTitlesRaw.split('\n').filter(t => t.trim() !== '').map(t => t.trim());
+                const modules = moduleTitles.map((title, index) => ({
+                    moduleId: `module-${index}`,
+                    title: title,
+                    content: "" // Content will be added later
+                }));
+
+                const coursesRef = ref(db, 'courses');
+                const newCourseRef = push(coursesRef); // Generates a unique key/ID for the course
+
+                const newCourseData = {
+                    title: title,
+                    code: code,
+                    description: description,
+                    creditHours: creditHours,
+                    modules: modules,
+                    // Initialize other fields from the full course structure as needed, or leave them for later update
+                    instructor: "",
+                    department: "",
+                    level: "",
+                    term: "",
+                    exams: {},
+                    assignments: {},
+                    createdAt: Date.now(),
+                    // createdBy: auth.currentUser.uid // Optional: track creator
+                };
+
+                try {
+                    await set(newCourseRef, newCourseData);
+                    if(createCourseMessageEl) {
+                        createCourseMessageEl.textContent = 'Course created successfully!';
+                        createCourseMessageEl.style.color = 'green';
+                    }
+                    createCourseForm.reset();
+                } catch (error) {
+                    console.error("Error creating course:", error);
+                    if(createCourseMessageEl) {
+                        createCourseMessageEl.textContent = `Error creating course: ${error.message}`;
+                        createCourseMessageEl.style.color = 'var(--mit-red)';
+                    }
+                }
+            });
+        }
+    }
+
+    // Update loadAllCourses to handle new enrolledCourses structure if user is logged in
+    // The existing loadAllCourses already fetches enrolled courses to disable buttons.
+    // It needs to be robust if `enrolledSnapshot.val()` is an array of objects or an array of strings (old format).
+    // For now, `enrollInCourse` was changed to store objects, so `loadAllCourses` needs to check `courseId` within those objects.
+    // The part in `loadAllCourses` that reads enrolled courses:
+    // `db.ref('users/' + currentUserId + '/enrolledCourses').once('value', (enrolledSnapshot) => { ... })`
+    // should be changed to:
+    // `get(ref(db, 'users/' + currentUserId + '/enrolledCourses')).then((enrolledSnapshot) => { ... })`
+    // and the logic inside to check `enrolledCourseIds.includes(courseId)` needs to be
+    // `enrolledCourseObjects.some(ec => ec.courseId === courseId)` if `enrolledCourseObjects` is the array of enrollment objects.
+    // This change is done in the `loadAllCourses` function.
+    // The `enrollInCourse` function was also updated to correctly check if already enrolled based on the new object structure.
 
 }); // End DOMContentLoaded
