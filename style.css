@@ -1,24 +1,43 @@
-/* Royal African College Color Scheme */
+/* University Design Brief Color Palette */
 :root {
-    --royal-blue: #1A237E;
-    --carbon-black: #121212;
-    --cyan-glow: #00B8D4;
-    --soft-gray: #F5F5F5; /* For cards and content blocks on a light theme, or text on dark */
-    --text-white: #FFFFFF;
-    --text-deep-gray: #333333; /* For text on light backgrounds */
-    --mit-red: #A31F34; /* Keeping for existing styles that might use it, can be phased out */
-    --mit-dark-red: #861F41;
-    --mit-light-gray: #F2F2F2;
-    --mit-dark-gray: #8A8B8C;
+    /* Primary Palette */
+    --university-navy-blue: #00274D;
+    --university-gold: #FFB81C;
+    --university-cool-gray: #F5F5F5; /* Light gray for backgrounds/balance */
+    --university-white: #FFFFFF;
+    --university-dark-green: #14532D; /* Optional contrast */
+
+    /* Text Colors */
+    --text-primary-dark: #212529; /* Dark gray for text on light backgrounds */
+    --text-primary-light: #F8F9FA; /* Light gray/white for text on dark backgrounds */
+    --text-accent: var(--university-gold);
+    --text-link: var(--university-navy-blue);
+    --text-link-hover: var(--university-gold);
+
+    /* Font Variables */
+    --font-serif: 'Merriweather', serif; /* Example Serif Font */
+    --font-sans-serif: 'Lato', sans-serif; /* Example Sans-Serif Font */
+
+    /* Original Palette (to be phased out or aliased if needed during transition) */
+    --royal-blue: #1A237E; /* Old */
+    --carbon-black: #121212; /* Old */
+    --cyan-glow: #00B8D4; /* Old */
+    --soft-gray: #F5F5F5; /* Old - same as university-cool-gray */
+    --text-white: #FFFFFF; /* Old - same as university-white */
+    --text-deep-gray: #333333; /* Old - similar to text-primary-dark */
+    --mit-red: #A31F34; /* Old */
+    --mit-dark-red: #861F41; /* Old */
+    --mit-light-gray: #F2F2F2; /* Old - similar to university-cool-gray */
+    --mit-dark-gray: #8A8B8C; /* Old */
 }
 
 /* General Styles */
 body {
-    font-family: 'Inter', sans-serif;
+    font-family: var(--font-sans-serif); /* Updated to new sans-serif font */
     margin: 0;
     padding: 0;
-    background-color: var(--carbon-black); /* Dark theme foundation */
-    color: var(--text-white); /* Default text color for dark theme */
+    background-color: var(--university-cool-gray); /* New: Light gray background */
+    color: var(--text-primary-dark); /* New: Dark text for readability */
     line-height: 1.7;
 }
 
@@ -31,59 +50,93 @@ body {
 
 /* Typography */
 h1, h2, h3, h4 {
-    font-weight: 600; /* Consistent weight */
-    color: var(--text-white); /* Default heading color for dark theme */
-    margin-top: 0;
+    font-family: var(--font-serif); /* New: Serif font for headings */
+    font-weight: 700; /* Standard weight for serif headings */
+    color: var(--university-navy-blue); /* New: Navy blue for headings */
+    margin-top: 0; /* Resetting margin-top */
+    margin-bottom: 0.5em; /* Default bottom margin for headings */
 }
 
 h1 {
-    font-size: 2.4em; /* Slightly larger for impact */
-    margin-bottom: 0.8em;
-    color: var(--royal-blue); /* Primary color for main page titles */
+    font-size: 2.8em; /* Adjusted size */
+    margin-bottom: 0.7em; /* Specific margin for h1 */
 }
 
 h2 {
-    font-size: 2em;
-    margin-bottom: 0.75em;
-    /* Removing border-bottom for a cleaner look, can be added per section if needed */
-    padding-bottom: 0.3em;
-    color: var(--soft-gray); /* Softer heading color */
+    font-size: 2.2em; /* Adjusted size */
+    margin-bottom: 0.6em; /* Specific margin for h2 */
+    padding-bottom: 0.2em;
+    /* border-bottom: 2px solid var(--university-gold); Optional: Accent border */
 }
+
+/* This h2 is for section titles like "Available Courses" in main content */
+main#home-page h2 { /* Make it more specific to avoid affecting auth section's h2 if it were outside the header */
+    font-size: 2.2em;
+    color: var(--university-navy-blue);
+    margin-bottom: 0.8em; /* More space after main section titles */
+    padding-bottom: 0.3em;
+    border-bottom: 1px solid #ddd; /* Subtle separator for main sections */
+}
+
 
 h3 {
-    font-size: 1.6em; /* Slightly larger */
-    margin-bottom: 0.5em;
-    color: var(--soft-gray);
+    font-size: 1.8em; /* Adjusted size */
+    /* margin-bottom is handled by general h1-h4 or can be specific if needed below */
+    color: var(--university-dark-green); /* Optional: Dark green for h3 */
 }
 
+/* Specifically target h3 within .auth-form as it was already styled */
+.auth-form h3 {
+    font-family: var(--font-serif);
+    color: var(--university-navy-blue);
+    font-size: 1.6em;
+    margin-bottom: 1em;
+    text-align: center; /* Retain center alignment for form titles */
+}
+
+
 h4 {
-    font-size: 1.3em; /* Added specific h4 styling */
-    color: var(--soft-gray);
+    font-size: 1.4em; /* Adjusted size */
+    /* margin-bottom is handled by general h1-h4 or can be specific if needed below */
+    color: var(--university-dark-green); /* Optional: Dark green for h4 */
+}
+
+/* Signup form section titles (h4) */
+#signup-form h4 {
+    font-family: var(--font-sans-serif); /* Sans-serif for these subheadings for clarity */
+    font-weight: 600;
+    color: var(--university-navy-blue);
+    font-size: 1.1em;
+    margin-top: 1.5em; /* Space above these subheadings */
+    margin-bottom: 0.8em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.3em;
 }
 
 
 p {
-    margin-bottom: 1.2em; /* Slightly more spacing for readability */
-    color: var(--mit-light-gray); /* Lighter gray for paragraph text on dark background */
+    margin-bottom: 1.2em;
+    color: var(--text-primary-dark); /* Ensure paragraphs are readable on light bg */
+    font-family: var(--font-sans-serif); /* Ensure paragraphs use sans-serif */
 }
 
 a {
-    color: var(--royal-blue);
+    color: var(--text-link);
     text-decoration: none;
     transition: color 0.3s ease;
 }
 
 a:hover {
-    color: var(--cyan-glow);
-    text-decoration: none; /* Keep no underline on hover for clean look */
+    color: var(--text-link-hover);
+    text-decoration: underline; /* Common practice for hover */
 }
 
 /* Header/Navigation (Updated) */
 nav {
-    background-color: var(--carbon-black);
-    color: var(--text-white);
-    padding: 1em 0;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+    background-color: var(--university-navy-blue); /* New: Navy Blue background */
+    color: var(--text-primary-light); /* New: Light text for contrast */
+    padding: 0.8em 0; /* Adjusted padding */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.15); /* Softer shadow */
     position: sticky;
     top: 0;
     z-index: 1000;
@@ -97,12 +150,12 @@ nav .container {
 }
 
 nav .logo {
-    color: var(--text-white);
+    color: var(--university-gold); /* New: Gold for logo */
+    font-family: var(--font-serif); /* New: Serif font for logo */
     font-weight: 700;
-    font-size: 1.6em;
-    font-family: 'Inter', sans-serif;
-    text-transform: uppercase;
-    letter-spacing: 1px;
+    font-size: 1.8em; /* Slightly larger logo */
+    text-transform: none; /* As per "slightly classic but fresh" - uppercase can feel too corporate */
+    letter-spacing: 0.5px;
 }
 
 nav ul {
@@ -114,95 +167,110 @@ nav ul {
 }
 
 nav ul li {
-    margin-left: 15px;
+    margin-left: 20px; /* Increased spacing */
 }
 
 nav ul li a {
-    color: var(--soft-gray);
+    color: var(--university-cool-gray); /* New: Cool gray for nav links */
+    font-family: var(--font-sans-serif); /* Ensure sans-serif for readability */
     font-weight: 500;
-    padding: 0.6em 1em;
+    padding: 0.5em 0.8em; /* Adjusted padding */
     border-radius: 4px;
-    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
-    text-transform: uppercase;
-    font-size: 0.9em;
+    transition: color 0.2s ease-in-out, background-color 0.2s ease-in-out;
+    text-transform: none; /* More modern/approachable */
+    font-size: 1em; /* Slightly larger nav links */
 }
 
 nav ul li a:hover,
 nav ul li a.active {
-    background-color: var(--royal-blue);
-    color: var(--text-white);
+    color: var(--university-gold); /* New: Gold for hover/active link text */
+    background-color: rgba(255, 255, 255, 0.1); /* Subtle background highlight on hover */
     text-decoration: none;
 }
 
 #auth-status a {
-    /* Custom styling if it needs to look different, e.g., like a button */
-    /* background-color: var(--royal-blue); */
-    /* color: var(--text-white); */
+    /* This could be styled to look more like a button if desired */
+    /* e.g., background-color: var(--university-gold); color: var(--university-navy-blue); */
 }
 /* #auth-status a:hover {
-    background-color: var(--cyan-glow);
-    color: var(--carbon-black);
+    background-color: var(--university-white);
+    color: var(--university-navy-blue);
 } */
 
 
 /* Header / Auth Section */
+/* General container for the auth section */
 header#auth-section {
-    background-color: var(--mit-light-gray); /* Light gray background */
-    padding: 2em 0;
+    background-color: var(--university-white);
+    padding: 3em 0;
     text-align: center;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid #dee2e6;
 }
 header#auth-section.hidden {
     display: none;
 }
 
+/* Title for the Auth Section (e.g., "Login or Sign Up") */
+header#auth-section > .container > h2 {
+    font-family: var(--font-serif);
+    color: var(--university-navy-blue);
+    font-size: 2em;
+    margin-bottom: 1.5em; /* Increased space before the forms */
+}
+
 .auth-form {
-    margin-bottom: 2em;
-    padding: 1.5em;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #fff;
+    margin-bottom: 2.5em; /* Increased margin */
+    padding: 2em; /* Increased padding */
+    border: 1px solid #ced4da; /* Softer border */
+    border-radius: 8px; /* More rounded corners */
+    background-color: var(--university-white); /* Ensure white background */
     display: inline-block;
     text-align: left;
-    max-width: 350px; /* Max width for auth forms */
-    width: 100%; /* Make it responsive */
+    max-width: 400px; /* Slightly wider form */
+    width: 100%;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.07); /* Subtle shadow for depth */
 }
 .auth-form h3{
     margin-top:0;
     text-align: center;
+    font-family: var(--font-serif); /* Serif for form titles */
+    color: var(--university-navy-blue); /* Navy blue for form titles */
+    font-size: 1.6em; /* Adjusted size */
+    margin-bottom: 1em; /* More space below title */
 }
 .auth-form input[type="email"],
 .auth-form input[type="password"],
-.auth-form input[type="text"] {
-    width: calc(100% - 22px); /* Account for padding and border */
-    padding: 10px;
-    margin-bottom: 10px;
-    border: 1px solid #ccc;
+.auth-form input[type="text"],
+.auth-form input[type="date"],
+.auth-form input[type="tel"],
+.auth-form select,
+.auth-form textarea {
+    width: calc(100% - 24px); /* Account for padding and border */
+    padding: 12px; /* Increased padding */
+    margin-bottom: 1em; /* Consistent margin */
+    border: 1px solid #ced4da;
     border-radius: 4px;
     box-sizing: border-box;
-}
-
-.auth-form button {
-    width: 100%;
-    padding: 10px;
-    background-color: var(--mit-red); /* MIT Red for auth buttons */
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
+    font-family: var(--font-sans-serif); /* Sans-serif for inputs */
     font-size: 1em;
-    text-transform: uppercase; /* Match .btn style */
-    letter-spacing: 0.5px; /* Match .btn style */
-    font-weight: 500; /* Match .btn style */
+}
+.auth-form input::placeholder,
+.auth-form textarea::placeholder {
+    color: #6c757d; /* Softer placeholder text */
 }
 
-.auth-form button:hover {
-    background-color: var(--mit-dark-red); /* Darker red on hover */
-}
+/* Button styles are already handled by .auth-form button, but ensure it's taking precedence if needed */
+/* .auth-form button specifics were moved to the main button section for .auth-form button */
 
 .error-message {
-    color: var(--mit-red); /* Error messages in MIT Red */
-    margin-top: 10px;
+    color: var(--university-dark-green); /* Using dark green for errors for a less alarming but still noticeable message */
+    background-color: #e9f5e9; /* Light green background for error messages */
+    border: 1px solid var(--university-dark-green);
+    padding: 10px;
+    border-radius: 4px;
+    margin-top: 1em;
+    text-align: center;
+    font-size: 0.95em;
 }
 
 /* Page Content */
@@ -213,57 +281,97 @@ header#auth-section.hidden {
 
 /* Course Cards */
 .course-card {
-    background-color: #ffffff;
-    border: 1px solid #e0e0e0; /* Existing border */
-    border-radius: 4px; /* New border radius */
-    padding: 20px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    transition: transform 0.3s, box-shadow 0.3s; /* New transition */
+    background-color: var(--university-white); /* New: White background for cards */
+    border: 1px solid #dee2e6; /* Softer border color */
+    border-radius: 8px; /* Slightly more rounded corners for modern feel */
+    padding: 25px; /* Increased padding */
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08); /* Softer, more diffused shadow */
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+    display: flex; /* Added for flex layout */
+    flex-direction: column; /* Stack content vertically */
+    height: 100%; /* Make cards in a row equal height if in a grid */
 }
 
 .course-card:hover {
-    transform: translateY(-5px); /* New hover effect */
-    box-shadow: 0 10px 20px rgba(0,0,0,0.1); /* New hover shadow */
+    transform: translateY(-4px);
+    box-shadow: 0 6px 16px rgba(0,0,0,0.12);
 }
 
 .course-card h3 {
     margin-top: 0;
-    font-size: 1.4em;
-    color: var(--mit-red); /* MIT Red for course titles */
-    font-weight: 600; /* New font weight */
+    font-family: var(--font-serif); /* Serif for card titles */
+    font-size: 1.5em; /* Adjusted size */
+    color: var(--university-navy-blue); /* Navy blue for card titles */
+    font-weight: 700;
+    margin-bottom: 0.5em; /* Spacing below title */
 }
 
 .course-card p {
-    font-size: 0.95em;
-    margin-bottom: 15px;
+    font-family: var(--font-sans-serif); /* Sans-serif for card body */
+    font-size: 1em; /* Standardized size */
+    color: var(--text-primary-dark); /* Ensure good contrast */
+    margin-bottom: 1em; /* Spacing for paragraph */
+    flex-grow: 1; /* Allow paragraph to take available space */
 }
 
 /* Buttons */
 .btn {
     display: inline-block;
-    background-color: var(--mit-red); /* MIT Red */
-    color: #ffffff;
-    padding: 10px 20px;
+    background-color: var(--university-navy-blue); /* New: Navy Blue */
+    color: var(--university-white); /* New: White text */
+    padding: 12px 24px; /* Adjusted padding for better clickability */
     border: none;
     border-radius: 5px;
     cursor: pointer;
     text-align: center;
-    font-size: 0.9em; /* Updated font size */
-    transition: background-color 0.3s ease;
-    font-weight: 500; /* New font weight */
-    letter-spacing: 0.5px; /* New letter spacing */
-    text-transform: uppercase; /* New text transform */
+    font-size: 1em; /* Standardized font size */
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: var(--font-sans-serif); /* Ensure sans-serif for buttons */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .btn:hover {
-    background-color: var(--mit-dark-red); /* Darker red on hover */
+    background-color: var(--university-gold); /* New: Gold on hover */
+    color: var(--university-navy-blue); /* New: Navy text on gold hover */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 .btn-secondary {
-    background-color: var(--mit-dark-gray); /* Dark Gray for secondary */
+    background-color: var(--university-dark-green); /* New: Dark Green for secondary */
+    color: var(--university-white);
 }
 .btn-secondary:hover {
-    background-color: #555; /* Slightly darker gray on hover */
+    background-color: var(--university-gold); /* Consistent hover with primary button */
+    color: var(--university-dark-green); /* Dark green text on gold hover */
+}
+
+/* Ensure auth form buttons also use this new style */
+.auth-form button {
+    display: inline-block;
+    background-color: var(--university-navy-blue);
+    color: var(--university-white);
+    padding: 12px 24px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    text-align: center;
+    font-size: 1em;
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    font-family: var(--font-sans-serif);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    width: 100%; /* Keep width 100% for auth form */
+}
+
+.auth-form button:hover {
+    background-color: var(--university-gold);
+    color: var(--university-navy-blue);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
 }
 
 
@@ -330,47 +438,51 @@ header#auth-section.hidden {
 
 /* Footer */
 footer {
-    background-color: #343a40; /* Kept original dark footer, can change to var(--mit-red) if preferred */
-    color: #ffffff;
-    padding: 2.5em 0; /* Increased padding */
-    margin-top: 3em; /* Increased margin */
+    background-color: var(--university-navy-blue); /* New: Navy Blue background */
+    color: var(--university-cool-gray); /* New: Cool Gray text */
+    padding: 3em 0; /* Increased padding for a more substantial footer */
+    margin-top: 4em; /* More space above the footer */
+    font-family: var(--font-sans-serif); /* Ensure sans-serif for footer text */
 }
 
 .footer-content {
     display: flex;
     justify-content: space-between;
     flex-wrap: wrap;
-    gap: 40px;
-    margin-bottom: 30px;
+    gap: 30px; /* Adjusted gap */
+    margin-bottom: 2em;
 }
 
 .footer-logo {
-    flex: 2;
-    min-width: 250px; /* Ensure logo area doesn't get too small */
+    flex: 1; /* Adjusted flex basis */
+    min-width: 200px;
 }
 
-.footer-logo .logo { /* This refers to the span with class logo inside footer-logo */
-    font-size: 1.8em;
+.footer-logo .logo {
+    font-size: 1.7em; /* Adjusted size */
     font-weight: 700;
-    color: white;
-    font-family: 'Inter', sans-serif; /* Ensure Inter font */
+    color: var(--university-gold); /* Gold for footer logo */
+    font-family: var(--font-serif); /* Serif for footer logo */
+    margin-bottom: 0.3em; /* Space below logo text */
 }
-.footer-logo p { /* Style for the "Inspired by..." text */
+.footer-logo p {
     font-size: 0.9em;
-    color: rgba(255,255,255,0.7);
-    margin-top: 0.5em;
+    color: var(--university-cool-gray); /* Lighter text for tagline */
+    opacity: 0.8; /* Slightly transparent */
+    margin-top: 0;
 }
 
 .footer-links {
     flex: 1;
-    min-width: 150px; /* Ensure link sections don't get too small */
+    min-width: 150px;
 }
 
 .footer-links h4 {
-    color: white;
-    margin-bottom: 1em;
-    font-size: 1.1em;
-    font-weight: 600; /* Ensure heading weight */
+    color: var(--university-white); /* White for footer headings */
+    font-family: var(--font-serif); /* Serif for footer headings */
+    margin-bottom: 0.8em;
+    font-size: 1.2em; /* Slightly larger footer headings */
+    font-weight: 600;
 }
 
 .footer-links ul {
@@ -380,26 +492,29 @@ footer {
 }
 
 .footer-links li {
-    margin-bottom: 0.5em;
+    margin-bottom: 0.6em; /* Slightly more space between links */
 }
 
 .footer-links a {
-    color: rgba(255,255,255,0.8);
-    transition: color 0.3s;
+    color: var(--university-cool-gray); /* Cool gray for links */
+    opacity: 0.9;
+    transition: color 0.3s, opacity 0.3s;
 }
 
 .footer-links a:hover {
-    color: white;
+    color: var(--university-gold); /* Gold on hover */
+    opacity: 1;
     text-decoration: none;
 }
 
 .copyright {
     text-align: center;
-    padding-top: 20px;
-    border-top: 1px solid rgba(255,255,255,0.1);
-    color: rgba(255,255,255,0.6);
-    font-size: 0.9em;
-    margin-top: 20px; /* Add margin to separate from content above */
+    padding-top: 1.5em;
+    border-top: 1px solid rgba(255,255,255,0.15); /* Slightly more visible border */
+    color: var(--university-cool-gray);
+    opacity: 0.7; /* Slightly transparent copyright */
+    font-size: 0.85em;
+    margin-top: 2em;
 }
 
 
