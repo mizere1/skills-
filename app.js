@@ -1017,6 +1017,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         logoutButton.addEventListener('click', handleLogout);
     }
 
+    const exploreRacBtn = document.getElementById('explore-rac-btn');
+    const racNavLinks = document.getElementById('rac-nav-links');
+
+    if (exploreRacBtn && racNavLinks) {
+        exploreRacBtn.addEventListener('click', () => {
+            racNavLinks.classList.toggle('hidden');
+        });
+    }
+
     onAuthStateChanged(auth, (user) => {
         console.log("onAuthStateChanged: Event FIRED. User object:", user);
         if (user) {

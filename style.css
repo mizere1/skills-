@@ -402,6 +402,66 @@ footer {
     margin-top: 20px; /* Add margin to separate from content above */
 }
 
+/* Styles for the new navigation button and dropdown */
+#explore-rac-btn {
+    background-color: var(--royal-blue); /* Using existing variable */
+    color: white;
+    padding: 10px 15px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 1em;
+    margin-left: 20px;
+}
+
+#explore-rac-btn:hover {
+    background-color: var(--cyan-glow); /* Using existing variable */
+    color: var(--carbon-black);
+}
+
+#rac-nav-links {
+    position: absolute;
+    top: 100%; /* Position below the nav bar */
+    right: 20px;
+    background-color: var(--carbon-black); /* Match nav background */
+    border: 1px solid var(--royal-blue);
+    border-top: none; /* Remove top border as it connects to nav */
+    border-radius: 0 0 5px 5px; /* Rounded bottom corners */
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    z-index: 999; /* Ensure it's above other content but below nav if nav is sticky */
+    min-width: 200px; /* Minimum width for the dropdown */
+}
+
+#rac-nav-links.hidden {
+    display: none;
+}
+
+#rac-nav-links ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+#rac-nav-links ul li a {
+    display: block;
+    padding: 12px 20px; /* Increased padding for better touch targets */
+    color: var(--soft-gray);
+    text-decoration: none;
+    border-bottom: 1px solid var(--royal-blue); /* Separator lines */
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+}
+
+#rac-nav-links ul li:last-child a {
+    border-bottom: none; /* No border for the last item */
+}
+
+#rac-nav-links ul li a:hover {
+    background-color: var(--royal-blue);
+    color: var(--text-white);
+}
+
 
 /* Responsive Design */
 @media (max-width: 768px) {
