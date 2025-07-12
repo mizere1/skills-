@@ -10,16 +10,35 @@
 <body>
     <nav>
         <div class="container">
-            <a href="index.html" class="logo">Royal African College</a>
-            <ul>
+            <a href="index.html" class="logo">University of the People</a>
+            <div class="hamburger-menu hidden">
+                <span></span>
+                <span></span>
+                <span></span>
+            </div>
+            <div class="nav-actions">
+                <a href="#" class="btn btn-secondary" id="apply-btn">Apply</a>
+                <a href="#" class="btn" id="login-btn">Log In</a>
+                <a href="#" class="btn" id="donate-btn">Donate</a>
+            </div>
+            <div class="user-menu hidden">
+                <span class="username">Hello, John</span>
+                <a href="#" class="btn-secondary" id="logout-btn">Log Out</a>
+            </div>
+            <ul class="mobile-nav-links hidden">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="index.html#all-courses">Courses</a></li>
-                <li id="student-chat-nav-link" class="hidden"><a href="chat.html">Chat</a></li>
-                <li id="announcements-nav-link"><a href="dashboard.html#platform-news-section">Announcements</a></li>
-                <li id="admin-nav-link" class="hidden"><a href="admin.html">Admin</a></li>
+                <li id="student-chat-nav-link-mobile" class="hidden"><a href="chat.html">Chat</a></li>
+                <li id="announcements-nav-link-mobile"><a href="dashboard.html#platform-news-section">Announcements</a></li>
+                <li id="admin-nav-link-mobile" class="hidden"><a href="admin.html">Admin</a></li>
                 <li><a href="#">Contact</a></li>
-                <li id="profile-nav-link" class="hidden"><a href="profile.html">Profile</a></li>
-                <li id="auth-status"><a href="#" id="login-logout">Login</a></li>
+                <li id="profile-nav-link-mobile" class="hidden"><a href="profile.html">Profile</a></li>
+                <!-- Mobile Auth Buttons -->
+                <li class="nav-actions-mobile hidden"><a href="#" class="btn btn-secondary" id="apply-btn-mobile">Apply</a></li>
+                <li class="nav-actions-mobile hidden"><a href="#" class="btn" id="login-btn-mobile">Log In</a></li>
+                <li class="nav-actions-mobile hidden"><a href="#" class="btn" id="donate-btn-mobile">Donate</a></li>
+                <li class="user-menu-mobile hidden"><span class="username-mobile">Hello, John</span></li>
+                <li class="user-menu-mobile hidden"><a href="#" class="btn-secondary" id="logout-btn-mobile">Log Out</a></li>
             </ul>
         </div>
     </nav>
@@ -89,9 +108,10 @@
     </header>
 
     <main id="home-page" class="container page-content">
-        <section id="welcome-message">
-            <h1 style="font-size: 1.8em; margin-bottom: 0.5em;">Welcome to the University Learning Portal</h1> <!-- Adjusted style due to long signup -->
-            <p>Explore our courses and start your learning journey today.</p>
+        <section id="welcome-message" class="hero">
+            <h1>Your Future Starts Here</h1>
+            <p>100% Online. Tuition-Free. Accredited.</p>
+            <a href="#" class="btn btn-large" id="apply-now-hero-btn">Apply Now</a>
         </section>
         <section id="all-courses">
             <h2>Available Courses</h2>

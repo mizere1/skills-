@@ -30,6 +30,21 @@ body {
 }
 
 /* Typography */
+/* General Button Reset (minimal) */
+button, .btn {
+    margin: 0;
+    border: none;
+    background: none;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: inherit;
+    cursor: pointer;
+    text-decoration: none;
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
 h1, h2, h3, h4 {
     font-weight: 600; /* Consistent weight */
     color: var(--text-white); /* Default heading color for dark theme */
@@ -94,37 +109,57 @@ nav .container {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    position: relative; /* For absolute positioning of mobile menu if needed */
 }
 
 nav .logo {
-    color: var(--text-white);
+    color: var(--text-white); /* Will be University of the People */
     font-weight: 700;
-    font-size: 1.6em;
+    font-size: 1.5em; /* Adjusted for potentially longer name */
     font-family: 'Inter', sans-serif;
     text-transform: uppercase;
     letter-spacing: 1px;
+    margin-right: auto; /* Pushes other content to the right */
 }
 
+/* Hide old nav ul by default, will be used for mobile */
 nav ul {
     list-style: none;
     padding: 0;
     margin: 0;
+    display: none; /* Hidden by default, shown in mobile */
+    flex-direction: column;
+    width: 100%;
+    background-color: var(--carbon-black); /* Or a slightly different shade for dropdown */
+    position: absolute;
+    top: 100%; /* Position below the nav bar */
+    left: 0;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    z-index: 999; /* Below main nav z-index but above content */
+}
+nav ul.mobile-nav-links.active { /* Used by JS to show */
     display: flex;
-    align-items: center;
 }
 
+
 nav ul li {
-    margin-left: 15px;
+    margin-left: 0; /* Reset margin for vertical layout */
+    width: 100%;
 }
 
 nav ul li a {
     color: var(--soft-gray);
     font-weight: 500;
-    padding: 0.6em 1em;
-    border-radius: 4px;
+    padding: 0.8em 1em; /* Adjusted padding for touch targets */
+    border-radius: 0; /* No radius for full-width items */
     transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
     text-transform: uppercase;
     font-size: 0.9em;
+    display: block; /* Make links take full width */
+    border-bottom: 1px solid rgba(255,255,255,0.1); /* Separator */
+}
+nav ul li:last-child a {
+    border-bottom: none;
 }
 
 nav ul li a:hover,
@@ -134,15 +169,65 @@ nav ul li a.active {
     text-decoration: none;
 }
 
-#auth-status a {
-    /* Custom styling if it needs to look different, e.g., like a button */
-    /* background-color: var(--royal-blue); */
-    /* color: var(--text-white); */
+.nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Spacing between buttons */
 }
-/* #auth-status a:hover {
-    background-color: var(--cyan-glow);
-    color: var(--carbon-black);
-} */
+
+.user-menu {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+.user-menu .username {
+    color: var(--soft-gray);
+    font-size: 0.9em;
+}
+
+.hamburger-menu {
+    display: none; /* Hidden by default, shown on mobile */
+    cursor: pointer;
+    padding: 10px;
+}
+.hamburger-menu span {
+    display: block;
+    width: 25px;
+    height: 3px;
+    background-color: var(--text-white);
+    margin: 5px 0;
+    transition: all 0.3s ease-in-out; /* Changed transition */
+}
+
+/* Hamburger to X animation */
+.hamburger-menu.active span:nth-child(1) {
+    transform: translateY(8px) rotate(45deg);
+}
+.hamburger-menu.active span:nth-child(2) {
+    opacity: 0;
+}
+.hamburger-menu.active span:nth-child(3) {
+    transform: translateY(-8px) rotate(-45deg);
+}
+
+
+/* Styling for auth forms and other sections remain, focus on nav and hero */
+
+/* Hero Section */
+.hero { /* Was #welcome-message, now also .hero */
+    text-align: center;
+    padding: 3em 0; /* Add some padding */
+}
+.hero h1 {
+    font-size: 2.8em; /* Larger for hero */
+    color: var(--text-white); /* Ensure high contrast if background changes */
+    margin-bottom: 0.5em;
+}
+.hero p {
+    font-size: 1.2em;
+    color: var(--mit-light-gray);
+    margin-bottom: 1.5em;
+}
 
 
 /* Header / Auth Section */
@@ -241,31 +326,53 @@ header#auth-section.hidden {
 /* Buttons */
 .btn {
     display: inline-block;
-    background-color: var(--mit-red); /* MIT Red */
-    color: #ffffff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
+    background-color: #004990; /* UoPeople deep blue */
+    color: #fff;
+    padding: 12px 28px;
+    border-radius: 30px;
+    text-transform: uppercase;
+    font-weight: 600;
+    transition: background-color 0.3s, color 0.3s; /* Added color transition */
+    border: none; /* Flat design */
+    box-shadow: none; /* Flat design */
     text-align: center;
-    font-size: 0.9em; /* Updated font size */
-    transition: background-color 0.3s ease;
-    font-weight: 500; /* New font weight */
-    letter-spacing: 0.5px; /* New letter spacing */
-    text-transform: uppercase; /* New text transform */
+    text-decoration: none;
+    cursor: pointer;
+    font-size: 0.9em; /* Base font size, can be adjusted */
+    letter-spacing: 0.5px;
 }
 
 .btn:hover {
-    background-color: var(--mit-dark-red); /* Darker red on hover */
+    background-color: #002f6c; /* Darker blue on hover */
+    color: #fff;
 }
 
 .btn-secondary {
-    background-color: var(--mit-dark-gray); /* Dark Gray for secondary */
-}
-.btn-secondary:hover {
-    background-color: #555; /* Slightly darker gray on hover */
+    background-color: white;
+    color: #004990;
+    border: 2px solid #004990;
+    /* Inherits padding, border-radius, text-transform, font-weight from .btn or should be explicitly set if .btn doesn't cover all */
 }
 
+.btn-secondary:hover {
+    background-color: #f1f1f1;
+    color: #002f6c; /* Darker blue text on hover for secondary */
+}
+
+/* .btn-large is primarily for semantic distinction in HTML if needed,
+   styles are the same as .btn unless overridden for specific larger CTAs */
+.btn-large {
+    /* If specific larger styles are needed, add them here e.g. font-size: 1em; padding: 15px 35px; */
+}
+
+/* Navigation Bar Button Specifics */
+nav .nav-actions .btn,
+nav .nav-actions .btn-secondary,
+nav .user-menu .btn-secondary {
+    /* Adjust padding or font-size if they need to be smaller in the nav */
+    padding: 8px 20px; /* Slightly smaller padding for nav buttons */
+    font-size: 0.85em;
+}
 
 /* Progress Bar */
 .progress-bar-container {
@@ -409,33 +516,75 @@ footer {
         width: 90%;
     }
 
+    /* nav .container retains flex-direction: row, but content inside wraps or changes */
+    nav .logo {
+        /* Potentially reduce font size if needed, but it's already 1.5em */
+        /* margin-bottom: 10px; /* If logo stacks above hamburger */
+    }
+
+    .nav-actions {
+        /* These are hidden and moved into the hamburger menu */
+        display: none;
+    }
+    .user-menu {
+        /* This might also be hidden and its elements moved to hamburger */
+        display: none;
+    }
+
+    .hamburger-menu {
+        display: block; /* Show hamburger icon */
+        position: absolute; /* Position it relative to nav .container */
+        right: 15px;      /* Align to the right */
+        top: 50%;
+        transform: translateY(-50%);
+    }
+
     nav .container {
-        flex-direction: column;
-        align-items: flex-start;
+        /* Adjust justify-content if logo is not meant to be pushed left by hamburger */
+        /* justify-content: flex-start; */ /* If hamburger is part of normal flow */
     }
 
-    nav ul {
-        margin-top: 10px;
-        flex-direction: column;
+
+    nav ul.mobile-nav-links {
+        /* Styles for when it's active are already defined (display:flex, flex-direction:column) */
+        /* No specific changes here unless overriding general ul mobile styles */
+        /* Ensure it's properly positioned if it wasn't already absolute */
+        margin-top: 0; /* Remove margin-top if nav container doesn't change height */
+    }
+    /* The active class toggled by JS will make it display:flex */
+
+    /* Styling for buttons inside the mobile menu, if they are directly in .mobile-nav-links or a sub-container */
+    .mobile-nav-links .btn,
+    .mobile-nav-links .btn-secondary {
+        width: calc(100% - 2em); /* Full width minus padding of parent */
+        margin: 10px auto; /* Centering and spacing */
+        text-align: center;
+        padding: 12px 20px; /* Consistent padding */
+        font-size: 0.9em;
+    }
+     /* Ensure list items in mobile nav take full width */
+    nav ul.mobile-nav-links li {
         width: 100%;
+        box-sizing: border-box;
+    }
+    nav ul.mobile-nav-links li a { /* This is for regular links, not buttons */
+        padding: 1em; /* Good touch target */
+        text-align: left;
     }
 
-    nav ul li {
-        margin-left: 0;
-        margin-bottom: 5px;
-        width: 100%;
-    }
-    nav ul li a {
-        display: block;
-        padding: 8px 0;
-    }
 
     .course-list {
         grid-template-columns: 1fr; /* Stack cards on smaller screens */
     }
 
-    h1 {
+    h1 { /* General h1, not hero h1 */
         font-size: 2em;
+    }
+    .hero h1 { /* Hero h1 specific */
+        font-size: 2.2em; /* Slightly smaller hero h1 on mobile */
+    }
+    .hero p {
+        font-size: 1em;
     }
 
     h2 {
@@ -462,17 +611,23 @@ footer {
 
 @media (max-width: 480px) {
     nav .logo {
-        font-size: 1.5em; /* Adjusted logo size for smaller screens */
+        font-size: 1.3em; /* Adjusted logo size for smaller screens */
     }
-     h1 {
+    .hero h1 {
+        font-size: 1.8em; /* Further reduce hero h1 */
+    }
+    .hero p {
+        font-size: 0.9em;
+    }
+     h1 { /* General h1 */
         font-size: 1.8em;
     }
-
     h2 {
         font-size: 1.5em;
     }
-    .btn, button, .auth-form button { /* Apply to auth button as well */
-        font-size: 0.9em;
+    .btn, button, .auth-form button,
+    .mobile-nav-links .btn, .mobile-nav-links .btn-secondary { /* Ensure mobile menu buttons are also targeted */
+        font-size: 0.9em; /* Consistent button font size */
         padding: 10px 15px; /* Adjusted padding */
     }
 }

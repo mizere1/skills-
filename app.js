@@ -106,22 +106,57 @@ function clearProfilePageData() {
 // --- UI Update Functions (General) ---
 function updateUIForLoggedInUser(user) {
     console.log("--- updateUIForLoggedInUser: ENTERED for user:", user?.uid);
-    if (loginLogoutNav) {
-        loginLogoutNav.textContent = 'Logout';
-        loginLogoutNav.removeEventListener('click', showAuthSection);
-        loginLogoutNav.addEventListener('click', (e) => {
-            console.log("Logout link in NAV clicked");
-            e.preventDefault();
-            handleLogout();
-        });
-    }
-    if (authSection) authSection.classList.add('hidden');
+    // New Nav Elements - Desktop
+    const navActionsDesktop = document.querySelector('.nav-actions');
+    const userMenuDesktop = document.querySelector('.user-menu');
+    const loggedInUserNameDesktopEl = userMenuDesktop ? userMenuDesktop.querySelector('.username') : null;
 
+    // New Nav Elements - Mobile (within hamburger)
+    const navActionsMobileItems = document.querySelectorAll('.nav-actions-mobile'); // These are LIs
+    const userMenuMobileItems = document.querySelectorAll('.user-menu-mobile'); // These are LIs
+    const loggedInUserNameMobileEl = document.querySelector('.username-mobile');
+     // const mobileNavLinks = document.querySelector('.mobile-nav-links'); // Hamburger menu content
+    // const hamburgerMenuIcon = document.querySelector('.hamburger-menu');
+
+
+    // --- Desktop Nav State ---
+    if (navActionsDesktop) navActionsDesktop.classList.add('hidden');
+    if (userMenuDesktop) userMenuDesktop.classList.remove('hidden');
+    if (loggedInUserNameDesktopEl && user.displayName) {
+        loggedInUserNameDesktopEl.textContent = `Hello, ${user.displayName}`;
+    } else if (loggedInUserNameDesktopEl) {
+        loggedInUserNameDesktopEl.textContent = `Hello, User`; // Fallback
+    }
+
+    // --- Mobile Nav State (within hamburger) ---
+    navActionsMobileItems.forEach(item => item.classList.add('hidden'));
+    userMenuMobileItems.forEach(item => item.classList.remove('hidden'));
+    if (loggedInUserNameMobileEl && user.displayName) {
+        loggedInUserNameMobileEl.textContent = `Hello, ${user.displayName}`;
+    } else if (loggedInUserNameMobileEl) {
+        loggedInUserNameMobileEl.textContent = `Hello, User`; // Fallback
+    }
+
+    // Old nav login/logout link - to be removed or adapted
+    // if (loginLogoutNav) {
+    //     loginLogoutNav.textContent = 'Logout';
+    //     loginLogoutNav.removeEventListener('click', showAuthSection);
+    //     loginLogoutNav.addEventListener('click', (e) => {
+    //         console.log("Logout link in NAV clicked");
+    //         e.preventDefault();
+    //         handleLogout();
+    //     });
+    // }
+
+    if (authSection) authSection.classList.add('hidden'); // Hide main page login/signup form
+
+    // Update welcome message on hero if applicable
     if (welcomeMessage && (window.location.pathname.endsWith('index.html') || window.location.pathname.endsWith('/'))) {
-        welcomeMessage.classList.remove('hidden');
-        const h1 = welcomeMessage.querySelector('h1');
-        if(h1 && user.displayName) h1.textContent = `Welcome, ${user.displayName}!`;
-        else if(h1) h1.textContent = `Welcome!`;
+        const heroH1 = welcomeMessage.querySelector('h1'); // This is actually the hero section h1
+        // The hero section text is static as per new design "Your Future Starts Here"
+        // So, we don't update it with user's name.
+        // If a personalized welcome is needed elsewhere, that can be added.
+        welcomeMessage.classList.remove('hidden'); // Ensure hero is visible
     }
 
     Object.values(mainContentPages).forEach(pageEl => {
@@ -140,15 +175,36 @@ function updateUIForLoggedInUser(user) {
 
 function updateUIForLoggedOutUser() {
     console.log("updateUIForLoggedOutUser: CALLED");
-    if (loginLogoutNav) {
-        loginLogoutNav.textContent = 'Login';
-        loginLogoutNav.removeEventListener('click', handleLogout);
-        if (typeof showAuthSection === 'function') {
-            loginLogoutNav.addEventListener('click', showAuthSection);
-        } else {
-            console.error("showAuthSection is not defined when trying to attach to loginLogoutNav in updateUIForLoggedOutUser");
-        }
-    }
+
+    // New Nav Elements - Desktop
+    const navActionsDesktop = document.querySelector('.nav-actions');
+    const userMenuDesktop = document.querySelector('.user-menu');
+
+    // New Nav Elements - Mobile (within hamburger)
+    const navActionsMobileItems = document.querySelectorAll('.nav-actions-mobile');
+    const userMenuMobileItems = document.querySelectorAll('.user-menu-mobile');
+    // const mobileNavLinks = document.querySelector('.mobile-nav-links');
+    // const hamburgerMenuIcon = document.querySelector('.hamburger-menu');
+
+    // --- Desktop Nav State ---
+    if (navActionsDesktop) navActionsDesktop.classList.remove('hidden');
+    if (userMenuDesktop) userMenuDesktop.classList.add('hidden');
+
+    // --- Mobile Nav State (within hamburger) ---
+    navActionsMobileItems.forEach(item => item.classList.remove('hidden'));
+    userMenuMobileItems.forEach(item => item.classList.add('hidden'));
+
+    // Old nav login/logout link - to be removed or adapted
+    // if (loginLogoutNav) {
+    //     loginLogoutNav.textContent = 'Login';
+    //     loginLogoutNav.removeEventListener('click', handleLogout);
+    //     if (typeof showAuthSection === 'function') {
+    //         loginLogoutNav.addEventListener('click', showAuthSection);
+    //     } else {
+    //         console.error("showAuthSection is not defined when trying to attach to loginLogoutNav in updateUIForLoggedOutUser");
+    //     }
+    // }
+
     Object.values(mainContentPages).forEach(pageEl => {
         if (pageEl) pageEl.classList.add('hidden');
     });
@@ -913,13 +969,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log("DOMContentLoaded: START");
     loginForm = document.getElementById('login-form');
     signupForm = document.getElementById('signup-form');
-    logoutButton = document.getElementById('logout-button');
-    loginLogoutNav = document.getElementById('login-logout');
-    authSection = document.getElementById('auth-section');
+    logoutButton = document.getElementById('logout-button'); // This is on profile.html
+    // loginLogoutNav = document.getElementById('login-logout'); // This is the OLD nav item, replaced by new buttons
+
+    // New Nav button selectors - Desktop
+    const loginNavButtonDesktop = document.getElementById('login-btn');
+    const applyNavButtonDesktop = document.getElementById('apply-btn');
+    // const donateNavButtonDesktop = document.getElementById('donate-btn');
+    const logoutNavButtonDesktop = document.getElementById('logout-btn');
+
+    // New Nav button selectors - Mobile
+    const loginNavButtonMobile = document.getElementById('login-btn-mobile');
+    const applyNavButtonMobile = document.getElementById('apply-btn-mobile');
+    // const donateNavButtonMobile = document.getElementById('donate-btn-mobile');
+    const logoutNavButtonMobile = document.getElementById('logout-btn-mobile');
+
+    authSection = document.getElementById('auth-section'); // The main login/signup form area
     authError = document.getElementById('auth-error');
-    welcomeMessage = document.getElementById('welcome-message');
+    welcomeMessage = document.getElementById('welcome-message'); // This is the Hero section
     mainContentPages = {
-        home: document.getElementById('home-page'),
+        home: document.getElementById('home-page'), // The main content area of index.html
         dashboard: document.getElementById('dashboard-page'),
         courseDetail: document.getElementById('course-detail-page'), // Corresponds to course.html
         profile: document.getElementById('profile-page'),
@@ -1012,10 +1081,86 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
         });
     }
-    if (logoutButton) {
+    if (logoutButton) { // This is the logout button on profile.html
         console.log("Attaching logout listener to profile page button");
         logoutButton.addEventListener('click', handleLogout);
     }
+
+    // Helper to close mobile nav if open
+    function closeMobileNavIfOpen() {
+        const mobileNav = document.querySelector('.mobile-nav-links');
+        const hamburgerIcon = document.querySelector('.hamburger-menu');
+        if (mobileNav && mobileNav.classList.contains('active')) {
+            mobileNav.classList.remove('active');
+            if (hamburgerIcon) hamburgerIcon.classList.remove('active');
+        }
+    }
+
+    // --- Event listeners for Desktop Nav Buttons ---
+    if (loginNavButtonDesktop) {
+        loginNavButtonDesktop.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAuthSection();
+            closeMobileNavIfOpen();
+        });
+    }
+    if (logoutNavButtonDesktop) {
+        logoutNavButtonDesktop.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleLogout();
+            closeMobileNavIfOpen();
+        });
+    }
+    if (applyNavButtonDesktop) {
+        applyNavButtonDesktop.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAuthSection();
+            const signupEmailField = document.getElementById('signup-email');
+            if(signupEmailField) signupEmailField.focus();
+            closeMobileNavIfOpen();
+        });
+    }
+
+    // --- Event listeners for Mobile Nav Buttons ---
+    if (loginNavButtonMobile) {
+        loginNavButtonMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAuthSection();
+            closeMobileNavIfOpen();
+        });
+    }
+    if (logoutNavButtonMobile) {
+        logoutNavButtonMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            handleLogout();
+            closeMobileNavIfOpen();
+        });
+    }
+    if (applyNavButtonMobile) {
+        applyNavButtonMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            showAuthSection();
+            const signupEmailField = document.getElementById('signup-email');
+            if(signupEmailField) signupEmailField.focus();
+            const mobileNav = document.querySelector('.mobile-nav-links');
+            if (mobileNav && mobileNav.classList.contains('active')) {
+                mobileNav.classList.remove('active');
+            }
+        });
+    }
+
+    // Hamburger Menu Toggle
+    const hamburgerMenuIcon = document.querySelector('.hamburger-menu');
+    const mobileNavLinks = document.querySelector('.mobile-nav-links');
+
+    if (hamburgerMenuIcon && mobileNavLinks) {
+        hamburgerMenuIcon.addEventListener('click', () => {
+            mobileNavLinks.classList.toggle('active');
+            // Simple hamburger to X animation (optional)
+            hamburgerMenuIcon.classList.toggle('active');
+        });
+    }
+
 
     onAuthStateChanged(auth, (user) => {
         console.log("onAuthStateChanged: Event FIRED. User object:", user);
