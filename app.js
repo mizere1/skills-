@@ -966,7 +966,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (profilePictureFile) profilePictureURL = await uploadFileToStorage(profilePictureFile, `profilePictures/${user.uid}/${profilePictureFile.name}`);
                 let transcriptsURL = null;
                 if (transcriptsFile) transcriptsURL = await uploadFileToStorage(transcriptsFile, `transcripts/${user.uid}/${transcriptsFile.name}`);
-                const userData = {
+                const newUserData = {
                     displayName: name, email: email, role: 'student', profilePictureURL: profilePictureURL,
                     personalDetails: { dateOfBirth: dob, gender: gender },
                     contactInfo: { phone: phone, address: { street: addressStreet, city: addressCity, state: addressState, zip: addressZip, country: addressCountry }},
@@ -979,7 +979,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 const userDbRef = ref(db, 'users/' + user.uid);
                 try {
-                    await set(userDbRef, userData);
+                    await set(userDbRef, newUserData);
                     console.log('User signed up and all data stored in Realtime Database for UID:', user.uid);
                     signupForm.reset();
                 } catch (dbSetError) {
