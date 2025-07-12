@@ -129,18 +129,19 @@
         </div>
     </header>
 
-    <main id="home-page" class="page-content"> <!-- .container class might be applied by section or within main -->
+    <main id="home-page" class="page-content">
         <section id="welcome-message" class="hero">
-            <div class="container"> <!-- Container for hero content -->
+            <img src="https://i.ibb.co/ZRVFVfbR/i-Stock-African-student.jpg" alt="University student" class="hero-background-image">
+            <div class="hero-overlay"></div> <!-- Gradient overlay -->
+            <div class="container hero-content-container"> <!-- Container for hero text content -->
                 <h1>Your Future Starts Here</h1>
                 <p>100% Online. Tuition-Free. Accredited.</p>
                 <div class="hero-buttons">
                     <a href="#" class="btn btn-large" id="apply-now-hero-btn">Apply Now</a>
-                    <!-- <a href="#" class="btn btn-secondary btn-large" id="learn-more-hero-btn">Learn More</a> -->
                 </div>
             </div>
         </section>
-        <section id="all-courses" class="container"> <!-- Added .container class here -->
+        <section id="all-courses" class="container">
             <h2>Available Courses</h2>
             <div id="courses-container" class="course-list">
                 <!-- Courses will be dynamically loaded here -->
@@ -149,52 +150,14 @@
     </main>
 
     <footer>
-        <div class="footer-wave"></div>
-        <div class="footer-content container"> <!-- Added .container here for content alignment -->
-            <div class="footer-grid">
-                <div class="footer-column">
-                    <h3>About Us</h3>
-                    <p>Royal African College provides accessible, quality education to students worldwide. Join our global community.</p>
-                    <a href="#" class="btn btn-secondary">Learn More</a> <!-- Example button -->
-                </div>
-                <div class="footer-column">
-                    <h3>Quick Links</h3>
-                    <ul class="footer-links">
-                        <li><a href="#"><i class="fas fa-angle-right"></i> Admissions</a></li>
-                        <li><a href="#"><i class="fas fa-angle-right"></i> Academics</a></li>
-                        <li><a href="#"><i class="fas fa-angle-right"></i> Student Life</a></li>
-                        <li><a href="#"><i class="fas fa-angle-right"></i> Tuition & Aid</a></li>
-                        <li><a href="#"><i class="fas fa-angle-right"></i> FAQ</a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Contact Us</h3>
-                    <div class="footer-contact">
-                        <p><i class="fas fa-map-marker-alt"></i> 123 Education Way, Learning City, ED 45678</p>
-                        <p><i class="fas fa-phone"></i> +1 (555) 123-4567</p>
-                        <p><i class="fas fa-envelope"></i> info@royafrican.college</p>
-                    </div>
-                    <ul class="social-links">
-                         <li><a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
-                         <li><a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
-                         <li><a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
-                         <li><a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
-                    </ul>
-                </div>
-                <div class="footer-column">
-                    <h3>Newsletter</h3>
-                    <div class="newsletter">
-                        <p>Stay updated with our latest news and events.</p>
-                        <form class="newsletter-form">
-                            <input type="email" placeholder="Enter your email">
-                            <button type="submit" aria-label="Subscribe"><i class="fas fa-paper-plane"></i></button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="footer-bottom">
-            <p>&copy; 2024 Royal African College. All rights reserved. Inspired by UoPeople.</p>
+        <div class="container">
+            <ul class="footer-links-simple">
+                <li><a href="#">About Us</a></li>
+                <li><a href="#">Contact</a></li>
+                <li><a href="#">Privacy Policy</a></li>
+                <li><a href="#">Terms of Service</a></li>
+            </ul>
+            <p class="copyright">&copy; 2024 Royal African College. All rights reserved.</p>
         </div>
     </footer>
 
