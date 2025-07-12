@@ -32,9 +32,19 @@ import {
 import { addSampleCourses, addSampleAnnouncements, addSampleAcademicTerms } from './sample-data.js';
 
 // --- Global DOM Element variables ---
-let loginForm, signupForm, logoutButton, loginLogoutNav, authSection, authError, welcomeMessage;
+// Forms & Auth Area
+let loginForm, signupForm, authSection, authError;
+// Hero Section
+let welcomeMessage; // This is the hero section
+// Page content holders
 let mainContentPages = {};
+// Firebase storage
 let storage;
+
+// Buttons - Profile Page
+let logoutButton; // Logout button on profile.html
+
+// Nav items will be selected within functions as their structure is more complex now.
 
 // --- CORE HELPER & AUTH FUNCTIONS ---
 function handleLogout() {
@@ -104,41 +114,95 @@ function clearProfilePageData() {
 }
 
 // --- UI Update Functions (General) ---
-function updateUIForLoggedInUser(user) {
+
+// Helper to manage visibility of nav items
+function setNavItemsVisibility(loggedIn, userData) {
+    const applyBtnDesktop = document.getElementById('apply-btn');
+    const loginBtnDesktop = document.getElementById('login-btn');
+    const donateBtnDesktop = document.getElementById('donate-btn');
+    const usernameDesktop = document.querySelector('.nav-buttons .username');
+    const logoutBtnDesktop = document.getElementById('logout-btn');
+
+    const applyBtnMobileLi = document.getElementById('apply-btn-mobile')?.closest('li');
+    const loginBtnMobileLi = document.getElementById('login-btn-mobile')?.closest('li');
+    const donateBtnMobileLi = document.getElementById('donate-btn-mobile')?.closest('li');
+    const usernameMobileLi = document.querySelector('.username-mobile')?.closest('li');
+    const logoutBtnMobileLi = document.getElementById('logout-btn-mobile')?.closest('li');
+
+    const profileLinkDesktop = document.getElementById('profile-nav-link-desktop');
+    const adminLinkDesktop = document.getElementById('admin-nav-link-desktop');
+    const chatLinkDesktop = document.getElementById('student-chat-nav-link-desktop');
+    const profileLinkMobileLi = document.getElementById('profile-nav-link-mobile');
+    const adminLinkMobileLi = document.getElementById('admin-nav-link-mobile');
+    const chatLinkMobileLi = document.getElementById('student-chat-nav-link-mobile');
+
+    if (loggedIn) {
+        // Desktop
+        if (applyBtnDesktop) applyBtnDesktop.classList.add('hidden'); // Typically hide apply/login when logged in
+        if (loginBtnDesktop) loginBtnDesktop.classList.add('hidden');
+        // Donate button can remain visible if desired, or add to this logic
+        if (usernameDesktop) {
+            usernameDesktop.textContent = `Hello, ${userData?.displayName || 'User'}`;
+            usernameDesktop.classList.remove('hidden');
+        }
+        if (logoutBtnDesktop) logoutBtnDesktop.classList.remove('hidden');
+
+        // Mobile
+        if (applyBtnMobileLi) applyBtnMobileLi.classList.add('hidden');
+        if (loginBtnMobileLi) loginBtnMobileLi.classList.add('hidden');
+        if (usernameMobileLi) {
+            const mobileUsernameSpan = usernameMobileLi.querySelector('.username-mobile');
+            if(mobileUsernameSpan) mobileUsernameSpan.textContent = `Hello, ${userData?.displayName || 'User'}`;
+            usernameMobileLi.classList.remove('hidden');
+        }
+        if (logoutBtnMobileLi) logoutBtnMobileLi.classList.remove('hidden');
+
+        // Role-based links
+        if (profileLinkDesktop) profileLinkDesktop.classList.remove('hidden');
+        if (profileLinkMobileLi) profileLinkMobileLi.classList.remove('hidden');
+        if (chatLinkDesktop) chatLinkDesktop.classList.remove('hidden');
+        if (chatLinkMobileLi) chatLinkMobileLi.classList.remove('hidden');
+
+        if (userData?.role === 'admin' || userData?.role === 'faculty') {
+            if (adminLinkDesktop) adminLinkDesktop.classList.remove('hidden');
+            if (adminLinkMobileLi) adminLinkMobileLi.classList.remove('hidden');
+        } else {
+            if (adminLinkDesktop) adminLinkDesktop.classList.add('hidden');
+            if (adminLinkMobileLi) adminLinkMobileLi.classList.add('hidden');
+        }
+
+    } else { // Logged out
+        // Desktop
+        if (applyBtnDesktop) applyBtnDesktop.classList.remove('hidden');
+        if (loginBtnDesktop) loginBtnDesktop.classList.remove('hidden');
+        if (donateBtnDesktop) donateBtnDesktop.classList.remove('hidden'); // Show donate when logged out
+        if (usernameDesktop) usernameDesktop.classList.add('hidden');
+        if (logoutBtnDesktop) logoutBtnDesktop.classList.add('hidden');
+
+        // Mobile
+        if (applyBtnMobileLi) applyBtnMobileLi.classList.remove('hidden');
+        if (loginBtnMobileLi) loginBtnMobileLi.classList.remove('hidden');
+        if (donateBtnMobileLi) donateBtnMobileLi.classList.remove('hidden');
+        if (usernameMobileLi) usernameMobileLi.classList.add('hidden');
+        if (logoutBtnMobileLi) logoutBtnMobileLi.classList.add('hidden');
+
+        // Hide all role/auth-specific links
+        if (profileLinkDesktop) profileLinkDesktop.classList.add('hidden');
+        if (adminLinkDesktop) adminLinkDesktop.classList.add('hidden');
+        if (chatLinkDesktop) chatLinkDesktop.classList.add('hidden');
+        if (profileLinkMobileLi) profileLinkMobileLi.classList.add('hidden');
+        if (adminLinkMobileLi) adminLinkMobileLi.classList.add('hidden');
+        if (chatLinkMobileLi) chatLinkMobileLi.classList.add('hidden');
+    }
+}
+
+
+function updateUIForLoggedInUser(user, userData) { // Added userData parameter
     console.log("--- updateUIForLoggedInUser: ENTERED for user:", user?.uid);
-    // New Nav Elements - Desktop
-    const navActionsDesktop = document.querySelector('.nav-actions');
-    const userMenuDesktop = document.querySelector('.user-menu');
-    const loggedInUserNameDesktopEl = userMenuDesktop ? userMenuDesktop.querySelector('.username') : null;
-
-    // New Nav Elements - Mobile (within hamburger)
-    const navActionsMobileItems = document.querySelectorAll('.nav-actions-mobile'); // These are LIs
-    const userMenuMobileItems = document.querySelectorAll('.user-menu-mobile'); // These are LIs
-    const loggedInUserNameMobileEl = document.querySelector('.username-mobile');
-     // const mobileNavLinks = document.querySelector('.mobile-nav-links'); // Hamburger menu content
-    // const hamburgerMenuIcon = document.querySelector('.hamburger-menu');
-
-
-    // --- Desktop Nav State ---
-    if (navActionsDesktop) navActionsDesktop.classList.add('hidden');
-    if (userMenuDesktop) userMenuDesktop.classList.remove('hidden');
-    if (loggedInUserNameDesktopEl && user.displayName) {
-        loggedInUserNameDesktopEl.textContent = `Hello, ${user.displayName}`;
-    } else if (loggedInUserNameDesktopEl) {
-        loggedInUserNameDesktopEl.textContent = `Hello, User`; // Fallback
-    }
-
-    // --- Mobile Nav State (within hamburger) ---
-    navActionsMobileItems.forEach(item => item.classList.add('hidden'));
-    userMenuMobileItems.forEach(item => item.classList.remove('hidden'));
-    if (loggedInUserNameMobileEl && user.displayName) {
-        loggedInUserNameMobileEl.textContent = `Hello, ${user.displayName}`;
-    } else if (loggedInUserNameMobileEl) {
-        loggedInUserNameMobileEl.textContent = `Hello, User`; // Fallback
-    }
+    setNavItemsVisibility(true, userData || { displayName: user.displayName }); // Pass userData or a fallback
 
     // Old nav login/logout link - to be removed or adapted
-    // if (loginLogoutNav) {
+    // if (loginLogoutNav) { // loginLogoutNav is the old top-right text link, not used anymore
     //     loginLogoutNav.textContent = 'Logout';
     //     loginLogoutNav.removeEventListener('click', showAuthSection);
     //     loginLogoutNav.addEventListener('click', (e) => {
@@ -175,27 +239,10 @@ function updateUIForLoggedInUser(user) {
 
 function updateUIForLoggedOutUser() {
     console.log("updateUIForLoggedOutUser: CALLED");
-
-    // New Nav Elements - Desktop
-    const navActionsDesktop = document.querySelector('.nav-actions');
-    const userMenuDesktop = document.querySelector('.user-menu');
-
-    // New Nav Elements - Mobile (within hamburger)
-    const navActionsMobileItems = document.querySelectorAll('.nav-actions-mobile');
-    const userMenuMobileItems = document.querySelectorAll('.user-menu-mobile');
-    // const mobileNavLinks = document.querySelector('.mobile-nav-links');
-    // const hamburgerMenuIcon = document.querySelector('.hamburger-menu');
-
-    // --- Desktop Nav State ---
-    if (navActionsDesktop) navActionsDesktop.classList.remove('hidden');
-    if (userMenuDesktop) userMenuDesktop.classList.add('hidden');
-
-    // --- Mobile Nav State (within hamburger) ---
-    navActionsMobileItems.forEach(item => item.classList.remove('hidden'));
-    userMenuMobileItems.forEach(item => item.classList.add('hidden'));
+    setNavItemsVisibility(false, null);
 
     // Old nav login/logout link - to be removed or adapted
-    // if (loginLogoutNav) {
+    // if (loginLogoutNav) { // loginLogoutNav is the old top-right text link, not used anymore
     //     loginLogoutNav.textContent = 'Login';
     //     loginLogoutNav.removeEventListener('click', handleLogout);
     //     if (typeof showAuthSection === 'function') {
@@ -492,16 +539,15 @@ function loadUserData(user) {
     get(userDbRef).then((snapshot) => {
         console.log('loadUserData - Raw snapshot value for UID ' + user.uid + ':', snapshot.val());
         const userData = snapshot.val();
-        const adminNavLink = document.getElementById('admin-nav-link');
-        const studentChatNavLink = document.getElementById('student-chat-nav-link');
-        const profileNavLink = document.getElementById('profile-nav-link');
+        const userData = snapshot.val();
 
-        if(profileNavLink) profileNavLink.classList.remove('hidden');
-        if(studentChatNavLink) studentChatNavLink.classList.remove('hidden');
+        // Update the UI with the fetched data. This is the new central point for UI updates on login.
+        updateUIForLoggedInUser(user, userData);
 
         if (userData) {
             console.log('loadUserData - userData object:', JSON.stringify(userData, null, 2));
-            const userNameEl = document.getElementById('user-name');
+            // The display name is now set in setNavItemsVisibility, but we can update other page elements here
+            const userNameEl = document.getElementById('user-name'); // e.g. on profile page
             const userEmailEl = document.getElementById('user-email');
             if (userNameEl) userNameEl.textContent = userData.displayName || 'N/A';
             if (userEmailEl) userEmailEl.textContent = userData.email || 'N/A';
@@ -975,13 +1021,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     // New Nav button selectors - Desktop
     const loginNavButtonDesktop = document.getElementById('login-btn');
     const applyNavButtonDesktop = document.getElementById('apply-btn');
-    // const donateNavButtonDesktop = document.getElementById('donate-btn');
+    const donateNavButtonDesktop = document.getElementById('donate-btn');
     const logoutNavButtonDesktop = document.getElementById('logout-btn');
 
     // New Nav button selectors - Mobile
     const loginNavButtonMobile = document.getElementById('login-btn-mobile');
     const applyNavButtonMobile = document.getElementById('apply-btn-mobile');
-    // const donateNavButtonMobile = document.getElementById('donate-btn-mobile');
+    const donateNavButtonMobile = document.getElementById('donate-btn-mobile');
     const logoutNavButtonMobile = document.getElementById('logout-btn-mobile');
 
     authSection = document.getElementById('auth-section'); // The main login/signup form area
@@ -1120,6 +1166,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             closeMobileNavIfOpen();
         });
     }
+    if (donateNavButtonDesktop) {
+        donateNavButtonDesktop.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Add Donate action here, e.g., redirect to a donation page or show a modal
+            alert("Donate button clicked! Implement donation functionality.");
+            closeMobileNavIfOpen();
+        });
+    }
 
     // --- Event listeners for Mobile Nav Buttons ---
     if (loginNavButtonMobile) {
@@ -1142,10 +1196,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             showAuthSection();
             const signupEmailField = document.getElementById('signup-email');
             if(signupEmailField) signupEmailField.focus();
-            const mobileNav = document.querySelector('.mobile-nav-links');
-            if (mobileNav && mobileNav.classList.contains('active')) {
-                mobileNav.classList.remove('active');
-            }
+            closeMobileNavIfOpen(); // Already called by the helper, but ensure it's robust
+        });
+    }
+    if (donateNavButtonMobile) {
+        donateNavButtonMobile.addEventListener('click', (e) => {
+            e.preventDefault();
+            alert("Donate button clicked! Implement donation functionality.");
+            closeMobileNavIfOpen();
         });
     }
 
@@ -1166,11 +1224,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         console.log("onAuthStateChanged: Event FIRED. User object:", user);
         if (user) {
             console.log("onAuthStateChanged: User IS logged in. UID:", user.uid);
-            updateUIForLoggedInUser(user);
+            // updateUIForLoggedInUser is now called within loadUserData after fetching user details
             loadUserData(user);
         } else {
             console.log("onAuthStateChanged: User is NOT logged in.");
-            updateUIForLoggedOutUser();
+            updateUIForLoggedOutUser(); // This directly calls setNavItemsVisibility(false, null)
         }
     });
 

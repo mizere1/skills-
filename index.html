@@ -4,41 +4,63 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home - University Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"> -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome for icons if needed by new footer/design -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 <body>
     <nav>
         <div class="container">
-            <a href="index.html" class="logo">University of the People</a>
+            <a href="index.html" class="logo">
+                <img src="https://i.ibb.co/0yWvw6Vw/f5ba9c6e-510f-4696-8667-376cf9b04c7b.png" alt="Royal African College Logo">
+                <span>Royal African College</span>
+            </a>
+
+            <!-- Hamburger Menu Icon for mobile -->
             <div class="hamburger-menu hidden">
                 <span></span>
                 <span></span>
                 <span></span>
             </div>
-            <div class="nav-actions">
+
+            <!-- Desktop Navigation Links -->
+            <ul class="desktop-nav-links">
+                <li><a href="index.html">Home</a></li>
+                <li><a href="index.html#all-courses">Courses</a></li>
+                <li id="announcements-nav-link-desktop"><a href="dashboard.html#platform-news-section">Announcements</a></li>
+                <li><a href="#">Contact</a></li>
+                <li id="profile-nav-link-desktop" class="hidden"><a href="profile.html">Profile</a></li>
+                <li id="admin-nav-link-desktop" class="hidden"><a href="admin.html">Admin</a></li>
+                <li id="student-chat-nav-link-desktop" class="hidden"><a href="chat.html">Chat</a></li>
+            </ul>
+
+            <!-- Desktop Action Buttons -->
+            <div class="nav-buttons">
                 <a href="#" class="btn btn-secondary" id="apply-btn">Apply</a>
                 <a href="#" class="btn" id="login-btn">Log In</a>
                 <a href="#" class="btn" id="donate-btn">Donate</a>
+                <span class="username hidden">Hello, John</span>
+                <a href="#" class="btn btn-secondary hidden" id="logout-btn">Log Out</a>
             </div>
-            <div class="user-menu hidden">
-                <span class="username">Hello, John</span>
-                <a href="#" class="btn-secondary" id="logout-btn">Log Out</a>
-            </div>
+
+            <!-- Mobile Navigation Links (Hamburger Menu Content) -->
             <ul class="mobile-nav-links hidden">
                 <li><a href="index.html">Home</a></li>
                 <li><a href="index.html#all-courses">Courses</a></li>
-                <li id="student-chat-nav-link-mobile" class="hidden"><a href="chat.html">Chat</a></li>
                 <li id="announcements-nav-link-mobile"><a href="dashboard.html#platform-news-section">Announcements</a></li>
-                <li id="admin-nav-link-mobile" class="hidden"><a href="admin.html">Admin</a></li>
                 <li><a href="#">Contact</a></li>
                 <li id="profile-nav-link-mobile" class="hidden"><a href="profile.html">Profile</a></li>
-                <!-- Mobile Auth Buttons -->
-                <li class="nav-actions-mobile hidden"><a href="#" class="btn btn-secondary" id="apply-btn-mobile">Apply</a></li>
-                <li class="nav-actions-mobile hidden"><a href="#" class="btn" id="login-btn-mobile">Log In</a></li>
-                <li class="nav-actions-mobile hidden"><a href="#" class="btn" id="donate-btn-mobile">Donate</a></li>
-                <li class="user-menu-mobile hidden"><span class="username-mobile">Hello, John</span></li>
-                <li class="user-menu-mobile hidden"><a href="#" class="btn-secondary" id="logout-btn-mobile">Log Out</a></li>
+                <li id="admin-nav-link-mobile" class="hidden"><a href="admin.html">Admin</a></li>
+                <li id="student-chat-nav-link-mobile" class="hidden"><a href="chat.html">Chat</a></li>
+
+                <!-- Mobile Auth Buttons - to be shown/hidden by JS -->
+                <li class="auth-mobile"><a href="#" class="btn btn-secondary" id="apply-btn-mobile">Apply</a></li>
+                <li class="auth-mobile"><a href="#" class="btn" id="login-btn-mobile">Log In</a></li>
+                <li class="auth-mobile"><a href="#" class="btn" id="donate-btn-mobile">Donate</a></li>
+                <li class="auth-mobile hidden"><span class="username-mobile">Hello, John</span></li>
+                <li class="auth-mobile hidden"><a href="#" class="btn-secondary" id="logout-btn-mobile">Log Out</a></li>
             </ul>
         </div>
     </nav>
@@ -50,7 +72,7 @@
                 <h3>Login</h3>
                 <input type="email" id="login-email" placeholder="Email" required>
                 <input type="password" id="login-password" placeholder="Password" required>
-                <button type="submit">Login</button>
+                <button type="submit" class="btn">Login</button>
             </form>
             <hr>
             <form id="signup-form" class="auth-form">
@@ -101,19 +123,24 @@
                     <label for="signup-terms">I accept the <a href="#terms" target="_blank">Terms and Conditions</a></label>
                 </div>
 
-                <button type="submit">Sign Up</button>
+                <button type="submit" class="btn">Sign Up</button>
             </form>
              <p id="auth-error" class="error-message"></p>
         </div>
     </header>
 
-    <main id="home-page" class="container page-content">
+    <main id="home-page" class="page-content"> <!-- .container class might be applied by section or within main -->
         <section id="welcome-message" class="hero">
-            <h1>Your Future Starts Here</h1>
-            <p>100% Online. Tuition-Free. Accredited.</p>
-            <a href="#" class="btn btn-large" id="apply-now-hero-btn">Apply Now</a>
+            <div class="container"> <!-- Container for hero content -->
+                <h1>Your Future Starts Here</h1>
+                <p>100% Online. Tuition-Free. Accredited.</p>
+                <div class="hero-buttons">
+                    <a href="#" class="btn btn-large" id="apply-now-hero-btn">Apply Now</a>
+                    <!-- <a href="#" class="btn btn-secondary btn-large" id="learn-more-hero-btn">Learn More</a> -->
+                </div>
+            </div>
         </section>
-        <section id="all-courses">
+        <section id="all-courses" class="container"> <!-- Added .container class here -->
             <h2>Available Courses</h2>
             <div id="courses-container" class="course-list">
                 <!-- Courses will be dynamically loaded here -->
@@ -122,34 +149,52 @@
     </main>
 
     <footer>
-        <div class="container">
-            <p>&copy; 2024 University Portal. Inspired by MIT OpenCourseWare.</p>
-        </div>
-    <footer>
-        <div class="container">
-            <div class="footer-content">
-                <div class="footer-logo">
-                    <span class="logo">University Portal</span>
-                    <p>Inspired by MIT OpenCourseWare</p>
+        <div class="footer-wave"></div>
+        <div class="footer-content container"> <!-- Added .container here for content alignment -->
+            <div class="footer-grid">
+                <div class="footer-column">
+                    <h3>About Us</h3>
+                    <p>Royal African College provides accessible, quality education to students worldwide. Join our global community.</p>
+                    <a href="#" class="btn btn-secondary">Learn More</a> <!-- Example button -->
                 </div>
-                <div class="footer-links">
-                    <h4>Resources</h4>
-                    <ul>
-                        <li><a href="#">Academic Calendar</a></li>
-                        <li><a href="#">Library</a></li>
-                        <li><a href="#">Student Services</a></li>
+                <div class="footer-column">
+                    <h3>Quick Links</h3>
+                    <ul class="footer-links">
+                        <li><a href="#"><i class="fas fa-angle-right"></i> Admissions</a></li>
+                        <li><a href="#"><i class="fas fa-angle-right"></i> Academics</a></li>
+                        <li><a href="#"><i class="fas fa-angle-right"></i> Student Life</a></li>
+                        <li><a href="#"><i class="fas fa-angle-right"></i> Tuition & Aid</a></li>
+                        <li><a href="#"><i class="fas fa-angle-right"></i> FAQ</a></li>
                     </ul>
                 </div>
-                <div class="footer-links">
-                    <h4>Support</h4>
-                    <ul>
-                        <li><a href="#">Help Center</a></li>
-                        <li><a href="#">Contact Us</a></li>
-                        <li><a href="#">Feedback</a></li>
+                <div class="footer-column">
+                    <h3>Contact Us</h3>
+                    <div class="footer-contact">
+                        <p><i class="fas fa-map-marker-alt"></i> 123 Education Way, Learning City, ED 45678</p>
+                        <p><i class="fas fa-phone"></i> +1 (555) 123-4567</p>
+                        <p><i class="fas fa-envelope"></i> info@royafrican.college</p>
+                    </div>
+                    <ul class="social-links">
+                         <li><a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a></li>
+                         <li><a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a></li>
+                         <li><a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a></li>
+                         <li><a href="#" aria-label="LinkedIn"><i class="fab fa-linkedin-in"></i></a></li>
                     </ul>
+                </div>
+                <div class="footer-column">
+                    <h3>Newsletter</h3>
+                    <div class="newsletter">
+                        <p>Stay updated with our latest news and events.</p>
+                        <form class="newsletter-form">
+                            <input type="email" placeholder="Enter your email">
+                            <button type="submit" aria-label="Subscribe"><i class="fas fa-paper-plane"></i></button>
+                        </form>
+                    </div>
                 </div>
             </div>
-            <p class="copyright">&copy; 2024 University Portal. All rights reserved.</p>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2024 Royal African College. All rights reserved. Inspired by UoPeople.</p>
         </div>
     </footer>
 
