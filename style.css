@@ -320,6 +320,13 @@ header#auth-section.hidden {
     background-color: var(--text-dark);
     color: var(--text-light);
 }
+.btn.btn-danger {
+    background-color: #D32F2F; /* A strong red */
+    color: var(--text-light);
+}
+.btn.btn-danger:hover {
+    background-color: #B71C1C; /* A darker red for hover */
+}
 .btn:disabled, .btn-secondary:disabled {
     background-color: #cccccc;
     color: #666666;

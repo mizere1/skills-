@@ -392,6 +392,7 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
     const courseSectionsContainer = document.getElementById('course-sections-container');
     const addSectionForm = document.getElementById('add-section-form');
     const newSectionTitleInput = document.getElementById('new-section-title');
+    const deleteCourseBtn = document.getElementById('delete-course-btn');
 
     let allCoursesData = {};
     let selectedCourseId = null;
@@ -559,6 +560,34 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
                 renderCourseSections(selectedCourseId);
             } else {
                 courseContentEditor.classList.add('hidden');
+            }
+        });
+    }
+
+    if (deleteCourseBtn) {
+        deleteCourseBtn.addEventListener('click', async () => {
+            if (!selectedCourseId) {
+                alert("Please select a course to delete.");
+                return;
+            }
+            const courseTitle = allCoursesData[selectedCourseId]?.title || "this course";
+            const isConfirmed = confirm(`Are you sure you want to permanently delete "${courseTitle}"?\nThis action cannot be undone.`);
+
+            if (isConfirmed) {
+                const courseRef = ref(db, `courses/${selectedCourseId}`);
+                try {
+                    await set(courseRef, null); // In RTDB, setting to null deletes the data
+                    alert(`Course "${courseTitle}" has been deleted.`);
+
+                    // Reset UI
+                    courseContentEditor.classList.add('hidden');
+                    selectedCourseId = null;
+                    await loadAllCoursesForAdmin(); // Refresh the dropdown list
+
+                } catch (error) {
+                    console.error("Error deleting course:", error);
+                    alert(`Failed to delete course: ${error.message}`);
+                }
             }
         });
     }
@@ -1024,7 +1053,7 @@ async function enrollInCourse(userId, courseId, button) {
             };
             enrolledCoursesArray.push(enrollmentData);
             await set(userCoursesDbRef, enrolledCoursesArray);
-            alert(`Successfully enrolled in ${course.title || "the course"}! Status: Pending Approval.`);
+            alert(`Successfully enrolled in ${course.title || "the course"}! Your request is pending approval. Please check your financial balance on your Profile page to ensure there are no delays in starting your course.`);
             if (button) { button.textContent = 'Enrollment Pending'; button.disabled = true; button.classList.add('btn-secondary'); }
             const userProgressDbRef = ref(db, `users/${userId}/progress/${courseId}`);
             await set(userProgressDbRef, { completedModules: [], lastActivity: Date.now(), totalModules: course.modules ? course.modules.length : 0, assignmentsSubmitted: 0 });
