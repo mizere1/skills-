@@ -384,6 +384,367 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
         });
     }
     loadAllUsersForAdmin();
+
+    // --- Course Content Management Logic ---
+    const adminCourseSelect = document.getElementById('admin-course-select');
+    const courseContentEditor = document.getElementById('course-content-editor');
+    const editingCourseTitleEl = document.getElementById('editing-course-title');
+    const courseSectionsContainer = document.getElementById('course-sections-container');
+    const addSectionForm = document.getElementById('add-section-form');
+    const newSectionTitleInput = document.getElementById('new-section-title');
+
+    let allCoursesData = {};
+    let selectedCourseId = null;
+
+    async function loadAllCoursesForAdmin() {
+        if (!adminCourseSelect) return;
+        adminCourseSelect.innerHTML = '<option value="">Loading Courses...</option>';
+        try {
+            const coursesSnapshot = await get(ref(db, 'courses'));
+            allCoursesData = coursesSnapshot.val();
+            adminCourseSelect.innerHTML = '<option value="">-- Select a Course --</option>';
+            if (allCoursesData) {
+                for (const courseId in allCoursesData) {
+                    const course = allCoursesData[courseId];
+                    const option = document.createElement('option');
+                    option.value = courseId;
+                    option.textContent = `${course.title} (${course.code || 'No Code'})`;
+                    adminCourseSelect.appendChild(option);
+                }
+            } else {
+                adminCourseSelect.innerHTML = '<option value="">No courses available</option>';
+            }
+        } catch (error) {
+            console.error("Error loading courses for admin select:", error);
+            adminCourseSelect.innerHTML = '<option value="">Error loading courses</option>';
+        }
+    }
+
+    function renderCourseSections(courseId) {
+        if (!courseId || !allCoursesData[courseId]) {
+            courseSectionsContainer.innerHTML = '<p>Could not load sections for this course.</p>';
+            return;
+        }
+        const course = allCoursesData[courseId];
+        const sections = course.sections || [];
+        courseSectionsContainer.innerHTML = '<h4>Existing Sections</h4>';
+
+        if (sections.length === 0) {
+            courseSectionsContainer.innerHTML += '<p>No sections created yet for this course.</p>';
+        } else {
+            const sectionsList = document.createElement('div');
+            sections.forEach((section, index) => {
+                const sectionEl = document.createElement('div');
+                sectionEl.classList.add('admin-section-container');
+                sectionEl.style.cssText = 'background-color: #fff; padding: 15px; border: 1px solid #ddd; margin-bottom: 15px; border-radius: 4px;';
+
+                const sectionTitle = document.createElement('h5');
+                sectionTitle.textContent = section.title;
+                sectionEl.appendChild(sectionTitle);
+
+                // Display existing content
+                const contentList = document.createElement('ul');
+                contentList.style.cssText = 'list-style-type: disc; padding-left: 20px;';
+                const sectionContent = section.content || [];
+                if (sectionContent.length > 0) {
+                    sectionContent.forEach(item => {
+                        const contentLi = document.createElement('li');
+                        contentLi.textContent = `[${item.type}] ${item.title}`;
+                        contentList.appendChild(contentLi);
+                    });
+                } else {
+                    const noContentLi = document.createElement('li');
+                    noContentLi.textContent = 'No content in this section yet.';
+                    noContentLi.style.fontStyle = 'italic';
+                    contentList.appendChild(noContentLi);
+                }
+                sectionEl.appendChild(contentList);
+
+                // Add content forms
+                const contentFormsContainer = document.createElement('div');
+                contentFormsContainer.classList.add('content-forms-container');
+                contentFormsContainer.style.marginTop = '15px';
+
+                const videoForm = document.getElementById('add-video-form-template').cloneNode(true);
+                const pdfForm = document.getElementById('add-pdf-form-template').cloneNode(true);
+                const moduleForm = document.getElementById('add-module-form-template').cloneNode(true);
+
+                contentFormsContainer.appendChild(videoForm);
+                contentFormsContainer.appendChild(pdfForm);
+                contentFormsContainer.appendChild(moduleForm);
+
+                sectionEl.appendChild(contentFormsContainer);
+
+                sectionsList.appendChild(sectionEl);
+            });
+            courseSectionsContainer.appendChild(sectionsList);
+
+            // Add event listeners to the new buttons
+            document.querySelectorAll('.add-content-btn').forEach(button => {
+                button.addEventListener('click', handleAddNewContent);
+            });
+        }
+    }
+
+    async function handleAddNewContent(e) {
+        const button = e.target;
+        const form = button.closest('.add-content-form');
+        const contentType = button.dataset.type;
+        const sectionEl = form.closest('.admin-section-container');
+
+        // Find the index of the section
+        const sectionsInDOM = Array.from(courseSectionsContainer.querySelectorAll('.admin-section-container'));
+        const sectionIndex = sectionsInDOM.indexOf(sectionEl);
+
+        if (sectionIndex === -1) {
+            console.error("Could not find the section index.");
+            return;
+        }
+
+        const title = form.querySelector('.content-title-input').value.trim();
+        if (!title) {
+            alert("Title is required.");
+            return;
+        }
+
+        let newContentItem = {
+            type: contentType,
+            title: title,
+            id: `content_${Date.now()}`,
+            order: (allCoursesData[selectedCourseId].sections[sectionIndex].content?.length || 0) + 1
+        };
+
+        if (contentType === 'video' || contentType === 'pdf') {
+            const url = form.querySelector('.content-url-input').value.trim();
+            if (!url) {
+                alert("URL is required for video or PDF.");
+                return;
+            }
+            newContentItem.url = url;
+        } else if (contentType === 'module') {
+            const text = form.querySelector('.content-text-input').value.trim();
+            newContentItem.content = text;
+        }
+
+        const courseRef = ref(db, `courses/${selectedCourseId}`);
+        try {
+            const snapshot = await get(courseRef);
+            const courseData = snapshot.val();
+            const sections = courseData.sections || [];
+
+            if (!sections[sectionIndex].content) {
+                sections[sectionIndex].content = [];
+            }
+            sections[sectionIndex].content.push(newContentItem);
+
+            await update(courseRef, { sections: sections });
+
+            // Update local cache and re-render
+            allCoursesData[selectedCourseId].sections = sections;
+            renderCourseSections(selectedCourseId);
+
+        } catch (error) {
+            console.error("Error adding new content:", error);
+            alert(`Failed to add content: ${error.message}`);
+        }
+    }
+
+    if (adminCourseSelect) {
+        adminCourseSelect.addEventListener('change', () => {
+            selectedCourseId = adminCourseSelect.value;
+            if (selectedCourseId && allCoursesData[selectedCourseId]) {
+                const course = allCoursesData[selectedCourseId];
+                editingCourseTitleEl.textContent = `Editing: ${course.title}`;
+                courseContentEditor.classList.remove('hidden');
+                renderCourseSections(selectedCourseId);
+            } else {
+                courseContentEditor.classList.add('hidden');
+            }
+        });
+    }
+
+    if (addSectionForm) {
+        addSectionForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newTitle = newSectionTitleInput.value.trim();
+            if (!newTitle || !selectedCourseId) {
+                alert("Please select a course and enter a section title.");
+                return;
+            }
+
+            const courseRef = ref(db, `courses/${selectedCourseId}`);
+            try {
+                const snapshot = await get(courseRef);
+                const courseData = snapshot.val();
+                const sections = courseData.sections || [];
+                const newSection = {
+                    sectionId: `sec_${Date.now()}`,
+                    title: newTitle,
+                    order: sections.length + 1,
+                    content: []
+                };
+                sections.push(newSection);
+
+                await update(courseRef, { sections: sections });
+
+                // Update local cache and re-render
+                allCoursesData[selectedCourseId].sections = sections;
+                renderCourseSections(selectedCourseId);
+                newSectionTitleInput.value = '';
+
+            } catch (error) {
+                console.error("Error adding new section:", error);
+                alert(`Failed to add section: ${error.message}`);
+            }
+        });
+    }
+
+    loadAllCoursesForAdmin();
+    initializeAccordion();
+}
+
+function initializeAccordion() {
+    const accordionHeaders = document.querySelectorAll('.accordion-header');
+
+    // Set the first section to be open by default
+    const firstHeader = accordionHeaders[0];
+    if (firstHeader) {
+        firstHeader.classList.add('active');
+        const firstContent = firstHeader.nextElementSibling;
+        if (firstContent && firstContent.classList.contains('accordion-content')) {
+            firstContent.style.maxHeight = firstContent.scrollHeight + "px";
+            firstContent.classList.add('active');
+        }
+    }
+
+    accordionHeaders.forEach(header => {
+        header.addEventListener('click', () => {
+            const currentlyActiveHeader = document.querySelector('.accordion-header.active');
+
+            // If the clicked header is not the currently active one, close the active one
+            if (currentlyActiveHeader && currentlyActiveHeader !== header) {
+                currentlyActiveHeader.classList.remove('active');
+                const activeContent = currentlyActiveHeader.nextElementSibling;
+                activeContent.style.maxHeight = null;
+                activeContent.classList.remove('active');
+            }
+
+            // Toggle the clicked header
+            header.classList.toggle('active');
+            const content = header.nextElementSibling;
+            if (content.style.maxHeight) {
+                content.style.maxHeight = null; // Close it
+                content.classList.remove('active');
+            } else {
+                content.style.maxHeight = content.scrollHeight + "px"; // Open it
+                content.classList.add('active');
+            }
+        });
+    });
+}
+
+function initializeLearningPage(user, userData) {
+    console.log("Initializing Learning Page for user:", user.uid);
+    const courseId = new URLSearchParams(window.location.search).get('id');
+    const courseTitleEl = document.getElementById('learning-course-title');
+    const sectionsAreaEl = document.getElementById('learning-sections-area');
+
+    if (!courseId) {
+        courseTitleEl.textContent = "Error";
+        sectionsAreaEl.innerHTML = "<p>No course ID provided in the URL.</p>";
+        return;
+    }
+
+    // Access Check
+    const enrollment = userData.enrolledCourses?.find(ec => ec.courseId === courseId);
+    if (!enrollment || enrollment.currentStatus !== 'active') {
+        courseTitleEl.textContent = "Access Denied";
+        sectionsAreaEl.innerHTML = `<p>You do not have active enrollment for this course. Please check your dashboard.</p><a href="dashboard.html" class="btn">Go to Dashboard</a>`;
+        return;
+    }
+
+    const courseRef = ref(db, `courses/${courseId}`);
+    get(courseRef).then(snapshot => {
+        if (!snapshot.exists()) {
+            courseTitleEl.textContent = "Course Not Found";
+            sectionsAreaEl.innerHTML = "<p>The requested course does not exist.</p>";
+            return;
+        }
+
+        const courseData = snapshot.val();
+        courseTitleEl.textContent = courseData.title;
+        sectionsAreaEl.innerHTML = ''; // Clear "Loading..." message
+
+        const sections = courseData.sections || [];
+        if (sections.length === 0) {
+            sectionsAreaEl.innerHTML = '<p>The instructor has not added any content to this course yet.</p>';
+            return;
+        }
+
+        // Sort sections by order if `order` property exists
+        sections.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+        sections.forEach(section => {
+            const sectionWrapper = document.createElement('div');
+            sectionWrapper.classList.add('course-section');
+
+            const sectionTitle = document.createElement('h2');
+            sectionTitle.textContent = section.title;
+            sectionWrapper.appendChild(sectionTitle);
+
+            const contentItems = section.content || [];
+            if (contentItems.length === 0) {
+                const noContent = document.createElement('p');
+                noContent.textContent = 'No materials in this section yet.';
+                sectionWrapper.appendChild(noContent);
+            } else {
+                // Sort content items by order if `order` property exists
+                contentItems.sort((a, b) => (a.order || 0) - (b.order || 0));
+
+                contentItems.forEach(item => {
+                    const itemWrapper = document.createElement('div');
+                    itemWrapper.classList.add('content-item');
+
+                    let contentHtml = `<h4>${item.title}</h4>`;
+                    switch (item.type) {
+                        case 'module':
+                            contentHtml += `<p>${item.content.replace(/\n/g, '<br>')}</p>`;
+                            break;
+                        case 'video':
+                            const videoId = parseYoutubeUrl(item.url);
+                            if (videoId) {
+                                contentHtml += `<div class="content-item-video-embed">
+                                    <iframe src="https://www.youtube.com/embed/${videoId}" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+                                </div>`;
+                            } else {
+                                contentHtml += `<p><a href="${item.url}" target="_blank" class="btn">Watch Video</a> (Could not embed)</p>`;
+                            }
+                            break;
+                        case 'pdf':
+                            contentHtml += `<p><a href="${item.url}" target="_blank" class="btn">Open PDF</a></p>`;
+                            break;
+                        // Cases for assignment/exam can be added here
+                        default:
+                            contentHtml += `<p>Unsupported content type.</p>`;
+                    }
+                    itemWrapper.innerHTML = contentHtml;
+                    sectionWrapper.appendChild(itemWrapper);
+                });
+            }
+            sectionsAreaEl.appendChild(sectionWrapper);
+        });
+
+    }).catch(error => {
+        console.error("Error fetching course content for learning page:", error);
+        courseTitleEl.textContent = "Error";
+        sectionsAreaEl.innerHTML = `<p>There was an error loading the course content. Please try again later.</p>`;
+    });
+}
+
+function parseYoutubeUrl(url) {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
 }
 
 function initializeChatPage(currentUser) {
@@ -473,6 +834,8 @@ function loadUserData(user) {
                 }
             } else if (currentPage === 'course.html') {
                 loadCourseDetailsWithAccessCheck(user, userData);
+            } else if (currentPage === 'learning.html') {
+                initializeLearningPage(user, userData);
             } else if (currentPage === 'chat.html') {
                 initializeChatPage(user);
             }
@@ -614,9 +977,15 @@ async function loadAllCourses(currentUserId) {
                 const course = courses[courseId];
                 const isEnrolled = enrolledCourseObjects.some(ec => ec.courseId === courseId);
                 const enrollmentInfo = enrolledCourseObjects.find(ec => ec.courseId === courseId);
-                let buttonText = 'Enroll';
+                let buttonHtml;
                 if (isEnrolled) {
-                    buttonText = enrollmentInfo?.currentStatus === 'pending_approval' ? 'Enrollment Pending' : 'Enrolled';
+                    if (enrollmentInfo?.currentStatus === 'active') {
+                        buttonHtml = `<a href="learning.html?id=${courseId}" class="btn">Start Learning</a>`;
+                    } else { // pending_approval or other statuses
+                        buttonHtml = `<button class="btn btn-secondary" disabled>Enrollment Pending</button>`;
+                    }
+                } else {
+                    buttonHtml = `<button class="btn enroll-btn" data-course-id="${courseId}">Enroll</button>`;
                 }
 
                 const courseCard = document.createElement('div');
@@ -626,9 +995,7 @@ async function loadAllCourses(currentUserId) {
                     <p><strong>Code:</strong> ${course.code || 'N/A'}</p>
                     <p><strong>Credits:</strong> ${course.creditHours || 'N/A'}</p>
                     <p>${course.description ? course.description.substring(0,150) + '...' : 'No description available.'}</p>
-                    <button class="btn enroll-btn" data-course-id="${courseId}" ${isEnrolled ? 'disabled' : ''}>
-                        ${buttonText}
-                    </button>`;
+                    ${buttonHtml}`;
                 coursesContainer.appendChild(courseCard);
             }
             document.querySelectorAll('.enroll-btn:not([disabled])').forEach(button => {
@@ -690,20 +1057,29 @@ async function loadEnrolledCourses(userId, enrolledCoursesData, userProgress) {
                 const completedCount = courseProg.completedModules?.length || 0;
                 const totalModules = courseProg.totalModules || (course.modules?.length || 0);
                 const progressPercent = totalModules > 0 ? (completedCount / totalModules) * 100 : 0;
-                let statusHtml = '', btnHtml = `<a href="course.html?id=${courseId}" class="btn">View Course</a>`;
-                if (enrollment.currentStatus === 'pending_approval') {
-                    statusHtml = '<p style="color: orange; font-weight: bold;">Status: Pending Approval</p>';
-                    btnHtml = `<button class="btn btn-secondary" disabled title="Enrollment pending approval">View Course</button>`;
-                } else if (enrollment.currentStatus === 'active') {
-                    statusHtml = '<p style="color: green; font-weight: bold;">Status: Active</p>';
-                } else if (enrollment.currentStatus) {
+                let statusHtml = '';
+                let btnHtml = '';
+
+                if (enrollment.currentStatus === 'active') {
+                    statusHtml = '<p style="color: var(--contrast-dark-green); font-weight: bold;">Status: Active</p>';
+                    btnHtml = `<a href="learning.html?id=${courseId}" class="btn">Start Learning</a>`;
+                } else if (enrollment.currentStatus === 'pending_approval') {
+                    statusHtml = '<p style="color: var(--accent-gold); font-weight: bold;">Status: Pending Approval</p>';
+                    btnHtml = `<button class="btn btn-secondary" disabled title="Enrollment pending approval">Pending</button>`;
+                } else {
                      statusHtml = `<p style="font-weight: bold;">Status: ${enrollment.currentStatus.replace('_', ' ')}</p>`;
+                     btnHtml = `<a href="course.html?id=${courseId}" class="btn btn-secondary">View Details</a>`;
                 }
+
                 const card = document.createElement('div');
                 card.classList.add('course-card');
-                card.innerHTML = `<h3>${enrollment.title || course.title}</h3> ${statusHtml} <p>${course.description?.substring(0,100) + '...' || 'No description.'}</p>
+                card.innerHTML = `
+                    <h3>${enrollment.title || course.title}</h3>
+                    ${statusHtml}
+                    <p>${course.description?.substring(0,100) + '...' || 'No description.'}</p>
                     <div class="progress-bar-container"><div class="progress-bar" style="width: ${progressPercent.toFixed(0)}%;">${progressPercent.toFixed(0)}%</div></div>
-                    <p>Modules: ${completedCount} / ${totalModules} completed</p> ${btnHtml}`;
+                    <p>Progress: ${completedCount} / ${totalModules} items completed</p>
+                    ${btnHtml}`;
                 enrolledCoursesList.appendChild(card);
             }
         } catch (error) { console.error(`Error loading enrolled course ${courseId}:`, error); }

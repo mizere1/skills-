@@ -73,136 +73,184 @@
     </nav>
 
     <main id="admin-page" class="container admin-container">
-        <h1>Course Management</h1>
+        <h1>Admin Dashboard</h1>
 
-        <section id="create-course-section" class="form-section">
-            <h2>Create New Course</h2>
-            <form id="create-course-form">
+        <div class="admin-accordion-section">
+            <h2 class="accordion-header active">Create New Course</h2>
+            <div class="accordion-content">
+                <form id="create-course-form">
+                    <div>
+                        <label for="course-title">Course Title:</label>
+                        <input type="text" id="course-title-input" required>
+                    </div>
+                    <div>
+                        <label for="course-code">Course Code:</label>
+                        <input type="text" id="course-code-input" placeholder="e.g., CS101" required>
+                    </div>
+                    <div>
+                        <label for="course-description">Course Description:</label>
+                        <textarea id="course-description-input" required></textarea>
+                    </div>
+                    <div>
+                        <label for="course-credits">Credit Hours:</label>
+                        <input type="number" id="course-credits-input" min="0" step="0.5" required>
+                    </div>
+                    <div>
+                        <label for="course-modules">Legacy Module Titles (one title per line, will be placed in a default 'Modules' section):</label>
+                        <textarea id="course-modules-input" placeholder="Introduction to Topic A\nAdvanced Topic B\nPractical Applications"></textarea>
+                    </div>
+                    <div>
+                        <label for="course-creation-term-select">Assign to Academic Term:</label>
+                        <select id="course-creation-term-select" required>
+                            <option value="">-- Select Term --</option>
+                            <!-- Terms will be populated by JavaScript -->
+                        </select>
+                    </div>
+                    <button type="submit" class="btn">Create Course</button>
+                </form>
+                <p id="create-course-message" style="margin-top: 1em;"></p>
+            </div>
+        </div>
+
+        <div class="admin-accordion-section">
+            <h2 class="accordion-header">Manage Course Content</h2>
+            <div class="accordion-content hidden">
                 <div>
-                    <label for="course-title">Course Title:</label>
-                    <input type="text" id="course-title-input" required>
-                </div>
-                <div>
-                    <label for="course-code">Course Code:</label>
-                    <input type="text" id="course-code-input" placeholder="e.g., CS101" required>
-                </div>
-                <div>
-                    <label for="course-description">Course Description:</label>
-                    <textarea id="course-description-input" required></textarea>
-                </div>
-                <div>
-                    <label for="course-credits">Credit Hours:</label>
-                    <input type="number" id="course-credits-input" min="0" step="0.5" required>
-                </div>
-                <div>
-                    <label for="course-modules">Module Titles (one title per line):</label>
-                    <textarea id="course-modules-input" placeholder="Introduction to Topic A\nAdvanced Topic B\nPractical Applications"></textarea>
-                </div>
-                <div>
-                    <label for="course-creation-term-select">Assign to Academic Term:</label>
-                    <select id="course-creation-term-select" required>
-                        <option value="">-- Select Term --</option>
-                        <!-- Terms will be populated by JavaScript -->
+                    <label for="admin-course-select">Select Course to Manage:</label>
+                    <select id="admin-course-select">
+                        <option value="">-- Select a Course --</option>
+                        <!-- Courses will be populated by JS -->
                     </select>
                 </div>
-                <button type="submit" class="btn">Create Course</button>
-            </form>
-            <p id="create-course-message" style="margin-top: 1em;"></p>
-        </section>
 
-        <section id="user-management-section" class="form-section">
-            <h2>User Management</h2>
-            <div id="admin-user-list-container">
-                <label for="admin-user-select">Select User:</label>
-                <select id="admin-user-select" style="margin-bottom: 1em; padding: 8px; min-width: 300px;">
-                    <option value="">Loading users...</option>
-                </select>
+                <div id="course-content-editor" class="hidden">
+                    <h3 id="editing-course-title"></h3>
+                    <div id="course-sections-container">
+                        <!-- Sections will be rendered here by JS -->
+                    </div>
+                    <div id="add-section-form-container">
+                        <h4>Add New Section</h4>
+                        <form id="add-section-form">
+                            <input type="text" id="new-section-title" placeholder="Enter new section title (e.g., Semester 1)" required>
+                            <button type="submit" class="btn">Add Section</button>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Templates for adding content to sections -->
+                <div id="content-templates" class="hidden">
+                    <div class="add-content-form" id="add-video-form-template">
+                        <h5>Add New Video</h5>
+                        <input type="text" class="content-title-input" placeholder="Video Title" required>
+                        <input type="url" class="content-url-input" placeholder="https://youtube.com/watch?v=..." required>
+                        <button type="button" class="btn btn-sm add-content-btn" data-type="video">Add Video</button>
+                    </div>
+                    <div class="add-content-form" id="add-pdf-form-template">
+                        <h5>Add New PDF</h5>
+                        <input type="text" class="content-title-input" placeholder="PDF Document Title" required>
+                        <input type="url" class="content-url-input" placeholder="https://example.com/document.pdf" required>
+                        <button type="button" class="btn btn-sm add-content-btn" data-type="pdf">Add PDF</button>
+                    </div>
+                    <div class="add-content-form" id="add-module-form-template">
+                        <h5>Add New Module</h5>
+                        <input type="text" class="content-title-input" placeholder="Module Title" required>
+                        <textarea class="content-text-input" placeholder="Module content..."></textarea>
+                        <button type="button" class="btn btn-sm add-content-btn" data-type="module">Add Module</button>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <div id="admin-selected-user-details" class="hidden">
-                <h3 id="admin-selected-user-name"></h3>
-
-                <h4>Fees Management</h4>
-                <p>Current Fees Balance: <strong id="admin-selected-user-fees">N/A</strong></p>
-                <div>
-                    <label for="admin-new-fees-amount">Set New Amount:</label>
-                    <input type="number" id="admin-new-fees-amount" placeholder="e.g., 27500" step="any">
-                </div>
-                <div>
-                    <label for="admin-new-fees-currency">Currency:</label>
-                    <input type="text" id="admin-new-fees-currency" value="MWK">
-                </div>
-                <button id="admin-update-fees-btn" class="btn">Update Fees</button>
-                <p id="admin-update-fees-message" style="margin-top: 0.5em;"></p>
-
-                <h4>Enrollment Approvals</h4>
-                <div id="admin-pending-enrollments">
-                    <p>Select a user to see pending enrollments.</p>
-                </div>
-            </div>
-        </section>
-
-        <section id="platform-announcements-section" class="form-section">
-            <h2>Post Platform Update/Announcement</h2>
-            <form id="platform-update-form">
-                <div>
-                    <label for="platform-update-message">Message:</label>
-                    <textarea id="platform-update-message" rows="4" required></textarea>
-                </div>
-                <button type="submit" class="btn">Post Platform Update</button>
-            </form>
-            <p id="platform-update-status" style="margin-top: 1em;"></p>
-        </section>
-
-        <section id="academic-term-management-section" class="form-section">
-            <h2>Academic Term Management</h2>
-            <form id="create-term-form">
-                <div>
-                    <label for="term-name">Term Name:</label>
-                    <input type="text" id="term-name" placeholder="e.g., Fall 2024" required>
-                </div>
-                <div>
-                    <label for="term-year">Year:</label>
-                    <input type="number" id="term-year" placeholder="e.g., 2024" min="2000" max="2100" required>
-                </div>
-                <div>
-                    <label for="term-type">Type:</label>
-                    <select id="term-type" required>
-                        <option value="">-- Select Type --</option>
-                        <option value="Fall">Fall</option>
-                        <option value="Spring">Spring</option>
-                        <option value="Summer">Summer</option>
-                        <option value="Winter">Winter</option>
-                        <option value="FullYear">Full Year</option>
-                        <option value="Other">Other</option>
+        <div class="admin-accordion-section">
+            <h2 class="accordion-header">User Management</h2>
+            <div class="accordion-content hidden">
+                <div id="admin-user-list-container">
+                    <label for="admin-user-select">Select User:</label>
+                    <select id="admin-user-select" style="margin-bottom: 1em; padding: 8px; min-width: 300px;">
+                        <option value="">Loading users...</option>
                     </select>
                 </div>
-                <div>
-                    <label for="term-start-date">Start Date:</label>
-                    <input type="date" id="term-start-date" required>
-                </div>
-                <div>
-                    <label for="term-end-date">End Date:</label>
-                    <input type="date" id="term-end-date" required>
-                </div>
-                <button type="submit" class="btn">Create Academic Term</button>
-            </form>
-            <p id="term-create-status" style="margin-top: 1em;"></p>
 
-            <h3>Existing Academic Terms</h3>
-            <ul id="existing-terms-list" style="list-style-type: none; padding-left: 0;">
-                <li>Loading terms...</li>
-            </ul>
-        </section>
+                <div id="admin-selected-user-details" class="hidden">
+                    <h3 id="admin-selected-user-name"></h3>
 
-        <!-- This section can be re-enabled later if needed for just listing courses -->
-        <!-- <section id="admin-course-list-container" class="form-section hidden">
-            <h2>Existing Courses</h2>
-            <div id="admin-course-list" class="course-list">
-                <p>Loading courses...</p>
+                    <h4>Fees Management</h4>
+                    <p>Current Fees Balance: <strong id="admin-selected-user-fees">N/A</strong></p>
+                    <div>
+                        <label for="admin-new-fees-amount">Set New Amount:</label>
+                        <input type="number" id="admin-new-fees-amount" placeholder="e.g., 27500" step="any">
+                    </div>
+                    <div>
+                        <label for="admin-new-fees-currency">Currency:</label>
+                        <input type="text" id="admin-new-fees-currency" value="MWK">
+                    </div>
+                    <button id="admin-update-fees-btn" class="btn">Update Fees</button>
+                    <p id="admin-update-fees-message" style="margin-top: 0.5em;"></p>
+
+                    <h4>Enrollment Approvals</h4>
+                    <div id="admin-pending-enrollments">
+                        <p>Select a user to see pending enrollments.</p>
+                    </div>
+                </div>
             </div>
-        </section> -->
+        </div>
 
+        <div class="admin-accordion-section">
+            <h2 class="accordion-header">Post Platform Update/Announcement</h2>
+            <div class="accordion-content hidden">
+                <form id="platform-update-form">
+                    <div>
+                        <label for="platform-update-message">Message:</label>
+                        <textarea id="platform-update-message" rows="4" required></textarea>
+                    </div>
+                    <button type="submit" class="btn">Post Platform Update</button>
+                </form>
+                <p id="platform-update-status" style="margin-top: 1em;"></p>
+            </div>
+        </div>
+
+        <div class="admin-accordion-section">
+            <h2 class="accordion-header">Academic Term Management</h2>
+            <div class="accordion-content hidden">
+                <form id="create-term-form">
+                    <div>
+                        <label for="term-name">Term Name:</label>
+                        <input type="text" id="term-name" placeholder="e.g., Fall 2024" required>
+                    </div>
+                    <div>
+                        <label for="term-year">Year:</label>
+                        <input type="number" id="term-year" placeholder="e.g., 2024" min="2000" max="2100" required>
+                    </div>
+                    <div>
+                        <label for="term-type">Type:</label>
+                        <select id="term-type" required>
+                            <option value="">-- Select Type --</option>
+                            <option value="Fall">Fall</option>
+                            <option value="Spring">Spring</option>
+                            <option value="Summer">Summer</option>
+                            <option value="Winter">Winter</option>
+                            <option value="FullYear">Full Year</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="term-start-date">Start Date:</label>
+                        <input type="date" id="term-start-date" required>
+                    </div>
+                    <div>
+                        <label for="term-end-date">End Date:</label>
+                        <input type="date" id="term-end-date" required>
+                    </div>
+                    <button type="submit" class="btn">Create Academic Term</button>
+                </form>
+                <p id="term-create-status" style="margin-top: 1em;"></p>
+
+                <h3>Existing Academic Terms</h3>
+                <ul id="existing-terms-list" style="list-style-type: none; padding-left: 0;">
+                    <li>Loading terms...</li>
+                </ul>
+            </div>
+        </div>
     </main>
 
     <footer>
