@@ -685,16 +685,25 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
 
 function initializeAccordion() {
     const accordionHeaders = document.querySelectorAll('.accordion-header');
-
-    // Remove the active class and set maxHeight to null for all sections initially
     accordionHeaders.forEach(header => {
-        const content = header.nextElementSibling;
-        header.classList.remove('active');
-        content.classList.remove('active');
-        content.style.maxHeight = null;
+        header.addEventListener('click', () => {
+            const content = header.nextElementSibling;
+
+            // Toggle active class on header
+            header.classList.toggle('active');
+            content.classList.toggle('active');
+
+            if (content.style.maxHeight) {
+                // If the content is already open, close it
+                content.style.maxHeight = null;
+            } else {
+                // Open the clicked section
+                content.style.maxHeight = content.scrollHeight + "px";
+            }
+        });
     });
 
-    // Set the first section to be open by default
+    // Automatically open the first section
     const firstHeader = accordionHeaders[0];
     if (firstHeader) {
         firstHeader.classList.add('active');
@@ -702,31 +711,6 @@ function initializeAccordion() {
         firstContent.classList.add('active');
         firstContent.style.maxHeight = firstContent.scrollHeight + "px";
     }
-
-    accordionHeaders.forEach(header => {
-        header.addEventListener('click', () => {
-            const currentlyActiveHeader = document.querySelector('.accordion-header.active');
-
-            // If the clicked header is not the currently active one, close the active one
-            if (currentlyActiveHeader && currentlyActiveHeader !== header) {
-                currentlyActiveHeader.classList.remove('active');
-                const activeContent = currentlyActiveHeader.nextElementSibling;
-                activeContent.style.maxHeight = null;
-                activeContent.classList.remove('active');
-            }
-
-            // Toggle the clicked header
-            header.classList.toggle('active');
-            const content = header.nextElementSibling;
-            if (content.style.maxHeight) {
-                content.style.maxHeight = null; // Close it
-                content.classList.remove('active');
-            } else {
-                content.style.maxHeight = content.scrollHeight + "px"; // Open it
-                content.classList.add('active');
-            }
-        });
-    });
 }
 
 function initializeLearningPage(user, userData) {
