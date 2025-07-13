@@ -680,41 +680,15 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
     }
 
     loadAllCoursesForAdmin();
-    initializeAccordion();
 }
 
-function initializeAccordion() {
-    const accordionHeaders = document.querySelectorAll('.accordion-header');
-    accordionHeaders.forEach(header => {
-        header.addEventListener('click', () => {
-            const content = header.nextElementSibling;
-
-            // Toggle active class on header
-            header.classList.toggle('active');
-            content.classList.toggle('active');
-
-            if (content.style.maxHeight) {
-                // If the content is already open, close it
-                content.style.maxHeight = null;
-            } else {
-                // Open the clicked section
-                content.style.maxHeight = content.scrollHeight + "px";
-            }
-        });
-    });
-
-    // Automatically open the first section
-    const firstHeader = accordionHeaders[0];
-    if (firstHeader) {
-        firstHeader.classList.add('active');
-        const firstContent = firstHeader.nextElementSibling;
-        firstContent.classList.add('active');
-        firstContent.style.maxHeight = firstContent.scrollHeight + "px";
-    }
-}
 
 function initializeLearningPage(user, userData) {
     console.log("Initializing Learning Page for user:", user.uid);
+
+    // Add class to body for page-specific styling
+    document.body.classList.add('learning-page-body');
+
     const courseId = new URLSearchParams(window.location.search).get('id');
     const courseTitleEl = document.getElementById('learning-course-title');
     const sectionsAreaEl = document.getElementById('learning-sections-area');
@@ -1477,4 +1451,30 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     await ensureSampleDataIsPopulated(); // Ensure sample data exists on initial load.
     console.log("DOMContentLoaded: END");
+
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebarNav = document.getElementById('sidebar-nav');
+
+    if (menuToggle && sidebarNav) {
+        menuToggle.addEventListener('click', () => {
+            menuToggle.classList.toggle('active');
+            sidebarNav.classList.toggle('active');
+        });
+    }
 });
+
+let lastScrollTop = 0;
+window.addEventListener("scroll", function() {
+    if (document.body.classList.contains('learning-page-body')) {
+        let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+        const nav = document.querySelector('nav');
+        if (currentScroll > lastScrollTop) {
+            // Scroll Down
+            if (nav) nav.classList.add('nav-hidden');
+        } else {
+            // Scroll Up
+            if (nav) nav.classList.remove('nav-hidden');
+        }
+        lastScrollTop = currentScroll <= 0 ? 0 : currentScroll; // For Mobile or negative scrolling
+    }
+}, false);

@@ -56,28 +56,30 @@
     </style>
 </head>
 <body>
-    <nav>
-        <div class="container">
+    <div class="menu-toggle" id="menu-toggle">
+        <div class="hamburger"></div>
+    </div>
+    <nav id="sidebar-nav">
+        <div class="sidebar-header">
             <a href="index.html" class="logo">Royal African College</a>
-            <ul>
-                <li><a href="index.html">Home</a></li>
-                <li><a href="index.html#all-courses">Courses</a></li>
-                <li id="student-chat-nav-link" class="hidden"><a href="chat.html">Chat</a></li>
-                <li id="announcements-nav-link"><a href="dashboard.html#platform-news-section">Announcements</a></li>
-                <li id="admin-nav-link" class="hidden"><a href="admin.html">Admin</a></li>
-                <li><a href="#">Contact</a></li>
-                <li id="profile-nav-link" class="hidden"><a href="profile.html">Profile</a></li>
-                <li id="auth-status"><a href="#" id="login-logout">Login</a></li>
-            </ul>
         </div>
+        <ul>
+            <li><a href="index.html#all-courses">Courses</a></li>
+            <li id="student-chat-nav-link" class="hidden"><a href="chat.html">Chat</a></li>
+            <li id="announcements-nav-link"><a href="dashboard.html#platform-news-section">Announcements</a></li>
+            <li id="admin-nav-link" class="hidden"><a href="admin.html">Admin</a></li>
+            <li><a href="#">Contact</a></li>
+            <li id="profile-nav-link" class="hidden"><a href="profile.html">Profile</a></li>
+            <li id="auth-status"><a href="#" id="login-logout">Logout</a></li>
+        </ul>
     </nav>
 
     <main id="admin-page" class="container admin-container">
         <h1>Admin Dashboard</h1>
 
-        <div class="admin-accordion-section">
-            <h2 class="accordion-header active">Create New Course</h2>
-            <div class="accordion-content">
+        <div class="form-section">
+            <h2>Create New Course</h2>
+            <div>
                 <form id="create-course-form">
                     <div>
                         <label for="course-title">Course Title:</label>
@@ -112,9 +114,9 @@
             </div>
         </div>
 
-        <div class="admin-accordion-section">
-            <h2 class="accordion-header">Manage Course Content</h2>
-            <div class="accordion-content hidden">
+        <div class="form-section">
+            <h2>Manage Course Content</h2>
+            <div>
                 <div>
                     <label for="admin-course-select">Select Course to Manage:</label>
                     <select id="admin-course-select">
@@ -165,9 +167,9 @@
             </div>
         </div>
 
-        <div class="admin-accordion-section">
-            <h2 class="accordion-header">User Management</h2>
-            <div class="accordion-content hidden">
+        <div class="form-section">
+            <h2>User Management</h2>
+            <div>
                 <div id="admin-user-list-container">
                     <label for="admin-user-select">Select User:</label>
                     <select id="admin-user-select" style="margin-bottom: 1em; padding: 8px; min-width: 300px;">
@@ -199,9 +201,9 @@
             </div>
         </div>
 
-        <div class="admin-accordion-section">
-            <h2 class="accordion-header">Post Platform Update/Announcement</h2>
-            <div class="accordion-content hidden">
+        <div class="form-section">
+            <h2>Post Platform Update/Announcement</h2>
+            <div>
                 <form id="platform-update-form">
                     <div>
                         <label for="platform-update-message">Message:</label>
@@ -213,9 +215,9 @@
             </div>
         </div>
 
-        <div class="admin-accordion-section">
-            <h2 class="accordion-header">Academic Term Management</h2>
-            <div class="accordion-content hidden">
+        <div class="form-section">
+            <h2>Academic Term Management</h2>
+            <div>
                 <form id="create-term-form">
                     <div>
                         <label for="term-name">Term Name:</label>
