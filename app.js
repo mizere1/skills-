@@ -484,6 +484,10 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
             document.querySelectorAll('.add-content-btn').forEach(button => {
                 button.addEventListener('click', handleAddNewContent);
             });
+
+            document.querySelectorAll('.delete-content-btn').forEach(button => {
+                button.addEventListener('click', handleDeleteContent);
+            });
         }
     }
 
@@ -547,6 +551,53 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
         } catch (error) {
             console.error("Error adding new content:", error);
             alert(`Failed to add content: ${error.message}`);
+        }
+    }
+
+    async function handleDeleteContent(e) {
+        const button = e.target;
+        const form = button.closest('.add-content-form');
+        const contentType = button.dataset.type;
+        const sectionEl = form.closest('.admin-section-container');
+        const title = form.querySelector('.content-title-input').value.trim();
+
+        if (!title) {
+            alert("Please provide the title of the content to delete.");
+            return;
+        }
+
+        const sectionsInDOM = Array.from(courseSectionsContainer.querySelectorAll('.admin-section-container'));
+        const sectionIndex = sectionsInDOM.indexOf(sectionEl);
+
+        if (sectionIndex === -1) {
+            console.error("Could not find the section index.");
+            return;
+        }
+
+        const courseRef = ref(db, `courses/${selectedCourseId}`);
+        try {
+            const snapshot = await get(courseRef);
+            const courseData = snapshot.val();
+            const sections = courseData.sections || [];
+            const content = sections[sectionIndex].content || [];
+
+            const contentIndex = content.findIndex(item => item.title === title && item.type === contentType);
+
+            if (contentIndex === -1) {
+                alert("Content not found.");
+                return;
+            }
+
+            content.splice(contentIndex, 1);
+            sections[sectionIndex].content = content;
+
+            await update(courseRef, { sections: sections });
+
+            allCoursesData[selectedCourseId].sections = sections;
+            renderCourseSections(selectedCourseId);
+        } catch (error) {
+            console.error("Error deleting content:", error);
+            alert(`Failed to delete content: ${error.message}`);
         }
     }
 
@@ -635,15 +686,21 @@ function initializeAdminPageLogic(adminUser, adminUserData) {
 function initializeAccordion() {
     const accordionHeaders = document.querySelectorAll('.accordion-header');
 
+    // Remove the active class and set maxHeight to null for all sections initially
+    accordionHeaders.forEach(header => {
+        const content = header.nextElementSibling;
+        header.classList.remove('active');
+        content.classList.remove('active');
+        content.style.maxHeight = null;
+    });
+
     // Set the first section to be open by default
     const firstHeader = accordionHeaders[0];
     if (firstHeader) {
         firstHeader.classList.add('active');
         const firstContent = firstHeader.nextElementSibling;
-        if (firstContent && firstContent.classList.contains('accordion-content')) {
-            firstContent.style.maxHeight = firstContent.scrollHeight + "px";
-            firstContent.classList.add('active');
-        }
+        firstContent.classList.add('active');
+        firstContent.style.maxHeight = firstContent.scrollHeight + "px";
     }
 
     accordionHeaders.forEach(header => {

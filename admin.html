@@ -124,10 +124,10 @@
                 </div>
 
                 <div id="course-content-editor" class="hidden">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">
-                    <h3 id="editing-course-title" style="margin: 0;"></h3>
-                    <button id="delete-course-btn" class="btn btn-danger">Delete This Course</button>
-                </div>
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1em;">
+                        <h3 id="editing-course-title" style="margin: 0;"></h3>
+                        <button id="delete-course-btn" class="btn btn-danger">Delete This Course</button>
+                    </div>
                     <div id="course-sections-container">
                         <!-- Sections will be rendered here by JS -->
                     </div>
@@ -159,6 +159,7 @@
                         <input type="text" class="content-title-input" placeholder="Module Title" required>
                         <textarea class="content-text-input" placeholder="Module content..."></textarea>
                         <button type="button" class="btn btn-sm add-content-btn" data-type="module">Add Module</button>
+                        <button type="button" class="btn btn-sm btn-danger delete-content-btn" data-type="module">Delete Module</button>
                     </div>
                 </div>
             </div>
